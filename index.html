@@ -133,6 +133,12 @@
       border-top: 1px solid var(--accent);
     }
 
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--accent);
+    }
+
     @media (max-width: 600px) {
       .menu-grid { grid-template-columns: 1fr; }
       button { display: block; width: 100%; margin: 8px 0; }
@@ -143,19 +149,22 @@
 </head>
 <body>
 
-  <div class="header">
-    <div><span class="accent">[БИАР]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v1.1</div>
-    <div id="current-time"></div>
-  </div>
+<div class="header">
+  <div><span class="accent">[БИАР]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v2.0 (синхронизация)</div>
+  <div id="current-time"></div>
+</div>
 
-  <div id="app" class="container"></div>
-
-  <div id="modal" class="modal">
-    <div class="modal-content" id="modal-content"></div>
-  </div>
+<div id="app" class="container"></div>
+<div id="modal" class="modal">
+  <div class="modal-content" id="modal-content"></div>
+</div>
 
 <script>
-// ==================== ДАННЫЕ ====================
+// ==================== НАСТРОЙКА ПОДКЛЮЧЕНИЯ К GOOGLE ====================
+// Здесь стоит твоя готовая ссылка на скрипт
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxvkIkx3SmVU7kLMwuh-78spPDPr2XwxqIynfHB2Fowly-pSPl155Hh5_8wr6eerQ68GQ/exec";
+
+// ==================== ДАННЫЕ (ЗАГРУЖАЮТСЯ ИЗ GOOGLE) ====================
 let currentUser = null;
 
 const users = {
@@ -163,19 +172,45 @@ const users = {
   "Admin": { password: "kawasaki", role: "admin", name: "ADMINISTRATOR" }
 };
 
-let articles = JSON.parse(localStorage.getItem('biar_articles')) || [
-  {id:1, code:"K-7734", title:"Объект № K-7734 «Чёрный лес»", text:"Аномальная зона в Тверской области...", images:["https://picsum.photos/800/400?random=1"], date:"2025-03-12"},
-  {id:2, code:"S-019", title:"Субъект S-019 «Шепчущий»", text:"Проявляется только в аудиозаписях...", images:[], date:"2026-01-08"},
-  {id:3, code:"R-5541", title:"Артефакт R-5541 «Зеркало»", text:"Отражает не того, кто смотрит...", images:["https://picsum.photos/800/400?random=2"], date:"2025-11-20"}
-];
+let articles = [];
+let messagesDB = {};
 
-let messagesDB = JSON.parse(localStorage.getItem('biar_messages')) || {
-  "ADMIN": [{from: "ADMIN", text: "Агент Tochilin, вы на связи?", time: "14:32"}],
-  "SI4015": [{from: "SI4015", text: "Нужна ваша помощь по протоколу P-112.", time: "09:17"}]
-};
+// Функции для работы с Google
+async function loadDataFromGoogle() {
+  try {
+    const response = await fetch(GOOGLE_SCRIPT_URL + "?action=getData", { method: 'GET' });
+    const data = await response.json();
+    if (data.status === "success") {
+      articles = data.articles || [];
+      messagesDB = data.messagesDB || {};
+      return true;
+    } else {
+      console.warn("Ошибка загрузки:", data);
+      return false;
+    }
+  } catch (e) {
+    console.error("Не удалось связаться с Google:", e);
+    alert("Не удалось загрузить данные. Проверьте интернет и что скрипт опубликован с доступом «Все, включая анонимных».");
+    return false;
+  }
+}
 
-function saveData() { localStorage.setItem('biar_articles', JSON.stringify(articles)); }
-function saveMessages() { localStorage.setItem('biar_messages', JSON.stringify(messagesDB)); }
+async function saveDataToGoogle() {
+  try {
+    const payload = { action: "saveData", articles: articles, messagesDB: messagesDB };
+    const response = await fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json();
+    return data.status === "success";
+  } catch (e) {
+    console.error("Ошибка сохранения:", e);
+    alert("Не удалось сохранить данные. Проверьте интернет.");
+    return false;
+  }
+}
 
 // ==================== СТРАНИЦЫ ====================
 function showPage(page) {
@@ -185,7 +220,7 @@ function showPage(page) {
     app.innerHTML = `
       <div style="text-align:center; margin-top:80px;">
         <h1 class="accent" style="font-size:28px; margin-bottom:30px;">БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ</h1>
-        <p class="typing" style="font-size:18px; color:var(--accent); margin:20px 0;">ДОСТУП К АРХИВУ РАЗРЕШЁН ТОЛЬКО АВТОРИЗОВАННЫМ АГЕНТАМ</p>
+        <p style="font-size:18px; color:var(--accent); margin:20px 0;">ДОСТУП К АРХИВУ РАЗРЕШЁН ТОЛЬКО АВТОРИЗОВАННЫМ АГЕНТАМ</p>
         <div style="max-width:420px; margin:40px auto;">
           <input type="text" id="login" placeholder="Код агента" style="margin-bottom:12px;"><br>
           <input type="password" id="pass" placeholder="Пароль" style="margin-bottom:12px;"><br>
@@ -211,10 +246,13 @@ function showPage(page) {
   }
 }
 
-function login() {
+async function login() {
   const l = document.getElementById('login').value.trim();
   const p = document.getElementById('pass').value.trim();
   if (users[l] && users[l].password === p) {
+    // При входе загружаем свежие данные
+    const ok = await loadDataFromGoogle();
+    if (!ok) return;
     currentUser = { login: l, ...users[l] };
     showPage('home');
   } else alert("НЕВЕРНЫЙ КОД АГЕНТА ИЛИ ПАРОЛЬ");
@@ -239,7 +277,6 @@ function showArchive() {
     <h2>ПОИСК В АРХИВЕ</h2>
     <input type="text" id="search-code" placeholder="Введите код доступа" style="margin:15px 0;">
     <button onclick="searchArticle()">НАЧАТЬ ПОИСК</button>`;
-
   if (currentUser.role === 'admin') {
     html += `<br><br><h3>Всего статей: ${articles.length}</h3>`;
   }
@@ -249,9 +286,8 @@ function showArchive() {
 function searchArticle() {
   const code = document.getElementById('search-code').value.trim().toUpperCase();
   const article = articles.find(a => a.code.toUpperCase() === code);
-  
   if (article) {
-    let imgHtml = article.images.map(src => `<img src="${src}" style="max-width:100%; margin:10px 0; border:1px solid #444;" onclick="this.style.maxHeight='none'">`).join('');
+    let imgHtml = (article.images || []).map(src => `<img src="${src}" style="max-width:100%; margin:10px 0; border:1px solid #444;" onclick="this.style.maxHeight='none'">`).join('');
     showModal(`
       <div class="article">
         <h2>${article.title}</h2>
@@ -313,15 +349,15 @@ function openChat(contact) {
   area.scrollTop = area.scrollHeight;
 }
 
-function deleteMessage(contact, index) {
+async function deleteMessage(contact, index) {
   if (confirm("Удалить сообщение?")) {
     messagesDB[contact].splice(index, 1);
-    saveMessages();
+    await saveDataToGoogle();
     openChat(contact);
   }
 }
 
-function sendMessage() {
+async function sendMessage() {
   const input = document.getElementById('chat-input');
   const text = input.value.trim();
   if (!text) return;
@@ -333,16 +369,13 @@ function sendMessage() {
   }
 
   const sender = document.getElementById('sender-select').value;
-
   if (!messagesDB[currentChatContact]) messagesDB[currentChatContact] = [];
-
   messagesDB[currentChatContact].push({
     from: sender,
     text: text,
     time: new Date().toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'})
   });
-
-  saveMessages();
+  await saveDataToGoogle();
   openChat(currentChatContact);
   input.value = '';
 }
@@ -358,7 +391,7 @@ function showAccount() {
   `);
 }
 
-function showAdmin() { /* код админки без изменений */ 
+function showAdmin() {
   let html = `<h2>АДМИН-ПАНЕЛЬ</h2><button onclick="createArticleForm()">+ Создать новую статью</button><br><br>`;
   articles.forEach(a => {
     html += `<div style="border:1px solid #444; padding:15px; margin:10px 0;">
@@ -369,8 +402,6 @@ function showAdmin() { /* код админки без изменений */
   });
   document.getElementById('app').innerHTML = html;
 }
-
-// (Остальные функции админки: createArticleForm, saveNewArticle, editArticle, saveEditedArticle, deleteArticle — остались прежними)
 
 function createArticleForm() {
   showModal(`
@@ -384,19 +415,18 @@ function createArticleForm() {
   `);
 }
 
-function saveNewArticle() {
+async function saveNewArticle() {
   const code = document.getElementById('new-code').value.trim();
   const title = document.getElementById('new-title').value.trim();
   const text = document.getElementById('new-text').value.trim();
   if (!code || !title || !text) return alert("Заполните обязательные поля");
-
   articles.push({
     id: Date.now(),
     code, title, text,
     images: [document.getElementById('new-image1').value.trim(), document.getElementById('new-image2').value.trim()].filter(Boolean),
     date: new Date().toISOString().split('T')[0]
   });
-  saveData();
+  await saveDataToGoogle();
   closeModal();
   showAdmin();
 }
@@ -406,16 +436,16 @@ function editArticle(id) {
   if (!a) return;
   showModal(`
     <h2>Редактирование</h2>
-    <input id="edit-code" value="${a.code}"><br>
-    <input id="edit-title" value="${a.title}"><br>
-    <textarea id="edit-text" rows="8">${a.text}</textarea><br>
-    <input id="edit-image1" value="${a.images[0]||''}"><br>
-    <input id="edit-image2" value="${a.images[1]||''}"><br>
+    <input id="edit-code" value="${a.code.replace(/"/g, '&quot;')}"><br>
+    <input id="edit-title" value="${a.title.replace(/"/g, '&quot;')}"><br>
+    <textarea id="edit-text" rows="8">${a.text.replace(/</g, '&lt;')}</textarea><br>
+    <input id="edit-image1" value="${(a.images[0]||'').replace(/"/g, '&quot;')}"><br>
+    <input id="edit-image2" value="${(a.images[1]||'').replace(/"/g, '&quot;')}"><br>
     <button onclick="saveEditedArticle(${id})">Сохранить изменения</button>
   `);
 }
 
-function saveEditedArticle(id) {
+async function saveEditedArticle(id) {
   const a = articles.find(x => x.id === id);
   if (!a) return;
   a.code = document.getElementById('edit-code').value.trim();
@@ -425,15 +455,15 @@ function saveEditedArticle(id) {
     document.getElementById('edit-image1').value.trim(),
     document.getElementById('edit-image2').value.trim()
   ].filter(Boolean);
-  saveData();
+  await saveDataToGoogle();
   closeModal();
   showAdmin();
 }
 
-function deleteArticle(id) {
+async function deleteArticle(id) {
   if (confirm("Удалить статью?")) {
     articles = articles.filter(a => a.id !== id);
-    saveData();
+    await saveDataToGoogle();
     showAdmin();
   }
 }
@@ -451,7 +481,8 @@ function closeModal() {
 showPage('login');
 
 setInterval(() => {
-  document.getElementById('current-time').textContent = new Date().toLocaleString('ru-RU');
+  const timeEl = document.getElementById('current-time');
+  if (timeEl) timeEl.textContent = new Date().toLocaleString('ru-RU');
 }, 1000);
 </script>
 </body>
