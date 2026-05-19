@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>БИАР • Бюро Исследований Аномалий России</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --accent: #00cc55;
+      --gray: #bbbbbb;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background: var(--bg);
+      color: var(--gray);
+      font-family: 'Courier New', monospace;
+      overflow: hidden;
+      height: 100vh;
+      line-height: 1.4;
+    }
+    .header {
+      background: #0a0a0a;
+      padding: 8px 15px;
+      border-bottom: 1px solid var(--accent);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+    }
+    .accent { color: var(--accent); text-shadow: 0 0 5px var(--accent); }
+    .container { padding: 20px; height: calc(100vh - 52px); overflow-y: auto; }
+
+    button {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      padding: 10px 16px;
+      cursor: pointer;
+      font-family: inherit;
+      margin: 5px;
+      transition: all 0.2s;
+    }
+    button:hover { background: var(--accent); color: #000; }
+
+    input, textarea, select {
+      background: #111;
+      border: 1px solid #444;
+      color: var(--gray);
+      padding: 10px;
+      width: 100%;
+      font-family: inherit;
+      margin: 8px 0;
+    }
+
+    .modal {
+      position: fixed; top:0; left:0; right:0; bottom:0;
+      background: rgba(0,0,0,0.97);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 10px;
+    }
+    .modal-content {
+      background: #111;
+      border: 1px solid var(--accent);
+      padding: 25px;
+      max-width: 720px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 0 20px var(--accent);
+    }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      max-width: 700px;
+      margin: 40px auto;
+    }
+
+    .back-btn {
+      margin-bottom: 15px;
+    }
+
+    /* ЧАТ */
+    .chat-container {
+      display: flex;
+      height: 65vh;
+      border: 1px solid var(--accent);
+      background: #0f0f0f;
+    }
+    .contacts {
+      width: 240px;
+      border-right: 1px solid #333;
+      padding: 10px;
+      background: #111;
+    }
+    .chat-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .messages {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+      background: #0a0a0a;
+    }
+    .message {
+      margin: 10px 0;
+      padding: 8px 12px;
+      border-radius: 4px;
+      max-width: 75%;
+      position: relative;
+    }
+    .message.admin { background: #002200; color: #00ff88; }
+    .message.si { background: #001122; color: #88ccff; }
+    .message.player { background: #221100; color: #ffcc88; align-self: flex-end; text-align: right; }
+    .input-area {
+      padding: 12px;
+      border-top: 1px solid #333;
+      background: #111;
+    }
+    .status-bar {
+      text-align: center;
+      padding: 8px;
+      background: #111;
+      font-size: 13px;
+      color: var(--accent);
+      border-top: 1px solid var(--accent);
+    }
+
+    @media (max-width: 600px) {
+      .menu-grid { grid-template-columns: 1fr; }
+      button { display: block; width: 100%; margin: 8px 0; }
+      .chat-container { flex-direction: column; }
+      .contacts { width: 100%; border-right: none; border-bottom: 1px solid #333; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div><span class="accent">[БИАР]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v1.1</div>
+    <div id="current-time"></div>
+  </div>
+
+  <div id="app" class="container"></div>
+
+  <div id="modal" class="modal">
+    <div class="modal-content" id="modal-content"></div>
+  </div>
+
+<script>
+// ==================== ДАННЫЕ ====================
+let currentUser = null;
+
+const users = {
+  "AT2167": { password: "AAF2615w", role: "player", name: "ANDREY TOCHILIN" },
+  "Admin": { password: "kawasaki", role: "admin", name: "ADMINISTRATOR" }
+};
+
+let articles = JSON.parse(localStorage.getItem('biar_articles')) || [
+  {id:1, code:"K-7734", title:"Объект № K-7734 «Чёрный лес»", text:"Аномальная зона в Тверской области...", images:["https://picsum.photos/800/400?random=1"], date:"2025-03-12"},
+  {id:2, code:"S-019", title:"Субъект S-019 «Шепчущий»", text:"Проявляется только в аудиозаписях...", images:[], date:"2026-01-08"},
+  {id:3, code:"R-5541", title:"Артефакт R-5541 «Зеркало»", text:"Отражает не того, кто смотрит...", images:["https://picsum.photos/800/400?random=2"], date:"2025-11-20"}
+];
+
+let messagesDB = JSON.parse(localStorage.getItem('biar_messages')) || {
+  "ADMIN": [{from: "ADMIN", text: "Агент Tochilin, вы на связи?", time: "14:32"}],
+  "SI4015": [{from: "SI4015", text: "Нужна ваша помощь по протоколу P-112.", time: "09:17"}]
+};
+
+function saveData() { localStorage.setItem('biar_articles', JSON.stringify(articles)); }
+function saveMessages() { localStorage.setItem('biar_messages', JSON.stringify(messagesDB)); }
+
+// ==================== СТРАНИЦЫ ====================
+function showPage(page) {
+  const app = document.getElementById('app');
+
+  if (page === 'login') {
+    app.innerHTML = `
+      <div style="text-align:center; margin-top:80px;">
+        <h1 class="accent" style="font-size:28px; margin-bottom:30px;">БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ</h1>
+        <p class="typing" style="font-size:18px; color:var(--accent); margin:20px 0;">ДОСТУП К АРХИВУ РАЗРЕШЁН ТОЛЬКО АВТОРИЗОВАННЫМ АГЕНТАМ</p>
+        <div style="max-width:420px; margin:40px auto;">
+          <input type="text" id="login" placeholder="Код агента" style="margin-bottom:12px;"><br>
+          <input type="password" id="pass" placeholder="Пароль" style="margin-bottom:12px;"><br>
+          <button onclick="login()" style="width:100%; padding:14px;">ВХОД В СИСТЕМУ</button>
+        </div>
+      </div>
+    `;
+  } else if (page === 'home') {
+    app.innerHTML = `
+      <h2 style="text-align:center;">ДОБРО ПОЖАЛОВАТЬ, АГЕНТ <span class="accent">${currentUser.name}</span></h2>
+      <p style="text-align:center;">Уровень доступа: ${currentUser.role === 'admin' ? 'M5 — Полный' : 'M2'}</p>
+      <div class="menu-grid">
+        <button onclick="showArchive()">АРХИВ ДОКУМЕНТОВ</button>
+        <button onclick="showAccount()">АККАУНТ</button>
+        <button onclick="showChat()">СВЯЗЬ</button>
+        <button onclick="deniedAccess()">ЗАПИСЬ</button>
+        <button onclick="deniedAccess()">КАРТА</button>
+        <button onclick="deniedAccess()">КОНТАКТЫ</button>
+        ${currentUser.role === 'admin' ? `<button onclick="showAdmin()">АДМИН-ПАНЕЛЬ</button>` : ''}
+        <button onclick="logout()">ВЫХОД ИЗ СИСТЕМЫ</button>
+      </div>
+    `;
+  }
+}
+
+function login() {
+  const l = document.getElementById('login').value.trim();
+  const p = document.getElementById('pass').value.trim();
+  if (users[l] && users[l].password === p) {
+    currentUser = { login: l, ...users[l] };
+    showPage('home');
+  } else alert("НЕВЕРНЫЙ КОД АГЕНТА ИЛИ ПАРОЛЬ");
+}
+
+function logout() {
+  if (confirm("Выйти из системы?")) {
+    currentUser = null;
+    showPage('login');
+  }
+}
+
+function deniedAccess() {
+  showModal(`<h2>ДОСТУП ОТКЛОНЁН</h2><p>Недостаточный уровень доступа.</p>`);
+}
+
+// ==================== АРХИВ ====================
+function showArchive() {
+  const app = document.getElementById('app');
+  let html = `
+    <button class="back-btn" onclick="showPage('home')">← НАЗАД НА ГЛАВНУЮ</button>
+    <h2>ПОИСК В АРХИВЕ</h2>
+    <input type="text" id="search-code" placeholder="Введите код доступа" style="margin:15px 0;">
+    <button onclick="searchArticle()">НАЧАТЬ ПОИСК</button>`;
+
+  if (currentUser.role === 'admin') {
+    html += `<br><br><h3>Всего статей: ${articles.length}</h3>`;
+  }
+  app.innerHTML = html;
+}
+
+function searchArticle() {
+  const code = document.getElementById('search-code').value.trim().toUpperCase();
+  const article = articles.find(a => a.code.toUpperCase() === code);
+  
+  if (article) {
+    let imgHtml = article.images.map(src => `<img src="${src}" style="max-width:100%; margin:10px 0; border:1px solid #444;" onclick="this.style.maxHeight='none'">`).join('');
+    showModal(`
+      <div class="article">
+        <h2>${article.title}</h2>
+        <p><strong>Код:</strong> ${article.code} | <strong>Дата:</strong> ${article.date}</p>
+        <p>${article.text}</p>
+        ${imgHtml}
+      </div>
+      ${currentUser.role === 'admin' ? `<button onclick="deleteArticle(${article.id});closeModal()">Удалить статью</button>` : ''}
+    `);
+  } else {
+    showModal("КОД НЕ НАЙДЕН В АРХИВЕ");
+  }
+}
+
+// ==================== ЧАТ ====================
+function showChat() {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <button class="back-btn" onclick="showPage('home')">← НАЗАД НА ГЛАВНУЮ</button>
+    <h2>ЗАЩИЩЁННЫЙ КАНАЛ СВЯЗИ</h2>
+    <div class="chat-container">
+      <div class="contacts">
+        <div onclick="openChat('ADMIN')" style="padding:14px; cursor:pointer; border-bottom:1px solid #333;">ADMIN (Руководство)</div>
+        <div onclick="openChat('SI4015')" style="padding:14px; cursor:pointer;">SI4015 (Полевой агент)</div>
+      </div>
+      <div class="chat-area">
+        <div class="messages" id="messages"></div>
+        <div class="input-area">
+          <select id="sender-select" style="width:30%; display:${currentUser.role==='admin'?'inline-block':'none'}">
+            <option value="ADMIN">От ADMIN</option>
+            <option value="SI4015">От SI4015</option>
+            <option value="ANDREY TOCHILIN">От ANDREY TOCHILIN</option>
+          </select>
+          <input type="text" id="chat-input" placeholder="Сообщение..." style="width:50%;">
+          <button onclick="sendMessage()">ОТПРАВИТЬ</button>
+        </div>
+        <div class="status-bar">Сеть защищённой связи • Уровень шифрования: A-7</div>
+      </div>
+    </div>
+  `;
+  openChat('ADMIN');
+}
+
+let currentChatContact = "ADMIN";
+
+function openChat(contact) {
+  currentChatContact = contact;
+  const area = document.getElementById('messages');
+  let html = '';
+  (messagesDB[contact] || []).forEach((m, index) => {
+    const cls = m.from === "ADMIN" ? "admin" : m.from === "SI4015" ? "si" : "player";
+    html += `
+      <div class="message ${cls}">
+        <strong>${m.from}:</strong> ${m.text} <small>(${m.time})</small>
+        ${currentUser.role === 'admin' ? `<button onclick="deleteMessage('${contact}', ${index})" style="font-size:10px; padding:2px 6px; float:right;">✕</button>` : ''}
+      </div>`;
+  });
+  area.innerHTML = html;
+  area.scrollTop = area.scrollHeight;
+}
+
+function deleteMessage(contact, index) {
+  if (confirm("Удалить сообщение?")) {
+    messagesDB[contact].splice(index, 1);
+    saveMessages();
+    openChat(contact);
+  }
+}
+
+function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  if (currentUser.role === 'player') {
+    showModal(`<h2>СВЯЗЬ ОТКЛЮЧЕНА</h2><p>Связь отключена в связи с пропажей агента.</p>`);
+    input.value = '';
+    return;
+  }
+
+  const sender = document.getElementById('sender-select').value;
+
+  if (!messagesDB[currentChatContact]) messagesDB[currentChatContact] = [];
+
+  messagesDB[currentChatContact].push({
+    from: sender,
+    text: text,
+    time: new Date().toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'})
+  });
+
+  saveMessages();
+  openChat(currentChatContact);
+  input.value = '';
+}
+
+// ==================== ПРОФИЛЬ И АДМИН ====================
+function showAccount() {
+  showModal(`
+    <h2>ПРОФИЛЬ АГЕНТА</h2>
+    <p><strong>Имя:</strong> ${currentUser.name}</p>
+    <p><strong>Должность:</strong> Агент по устранению аномалий</p>
+    <p><strong>Уровень доступа:</strong> ${currentUser.role === 'admin' ? 'M5 (Администратор)' : 'M2'}</p>
+    <p><strong>Статус:</strong> Пропал без вести</p>
+  `);
+}
+
+function showAdmin() { /* код админки без изменений */ 
+  let html = `<h2>АДМИН-ПАНЕЛЬ</h2><button onclick="createArticleForm()">+ Создать новую статью</button><br><br>`;
+  articles.forEach(a => {
+    html += `<div style="border:1px solid #444; padding:15px; margin:10px 0;">
+      <strong>${a.code}</strong> — ${a.title}
+      <button onclick="editArticle(${a.id})" style="float:right; margin-left:8px;">Редактировать</button>
+      <button onclick="deleteArticle(${a.id})" style="float:right;">Удалить</button>
+    </div>`;
+  });
+  document.getElementById('app').innerHTML = html;
+}
+
+// (Остальные функции админки: createArticleForm, saveNewArticle, editArticle, saveEditedArticle, deleteArticle — остались прежними)
+
+function createArticleForm() {
+  showModal(`
+    <h2>Создание статьи</h2>
+    <input id="new-code" placeholder="Код"><br>
+    <input id="new-title" placeholder="Заголовок"><br>
+    <textarea id="new-text" rows="7" placeholder="Текст..."></textarea><br>
+    <input id="new-image1" placeholder="Ссылка на фото 1"><br>
+    <input id="new-image2" placeholder="Ссылка на фото 2"><br>
+    <button onclick="saveNewArticle()">Сохранить статью</button>
+  `);
+}
+
+function saveNewArticle() {
+  const code = document.getElementById('new-code').value.trim();
+  const title = document.getElementById('new-title').value.trim();
+  const text = document.getElementById('new-text').value.trim();
+  if (!code || !title || !text) return alert("Заполните обязательные поля");
+
+  articles.push({
+    id: Date.now(),
+    code, title, text,
+    images: [document.getElementById('new-image1').value.trim(), document.getElementById('new-image2').value.trim()].filter(Boolean),
+    date: new Date().toISOString().split('T')[0]
+  });
+  saveData();
+  closeModal();
+  showAdmin();
+}
+
+function editArticle(id) {
+  const a = articles.find(x => x.id === id);
+  if (!a) return;
+  showModal(`
+    <h2>Редактирование</h2>
+    <input id="edit-code" value="${a.code}"><br>
+    <input id="edit-title" value="${a.title}"><br>
+    <textarea id="edit-text" rows="8">${a.text}</textarea><br>
+    <input id="edit-image1" value="${a.images[0]||''}"><br>
+    <input id="edit-image2" value="${a.images[1]||''}"><br>
+    <button onclick="saveEditedArticle(${id})">Сохранить изменения</button>
+  `);
+}
+
+function saveEditedArticle(id) {
+  const a = articles.find(x => x.id === id);
+  if (!a) return;
+  a.code = document.getElementById('edit-code').value.trim();
+  a.title = document.getElementById('edit-title').value.trim();
+  a.text = document.getElementById('edit-text').value.trim();
+  a.images = [
+    document.getElementById('edit-image1').value.trim(),
+    document.getElementById('edit-image2').value.trim()
+  ].filter(Boolean);
+  saveData();
+  closeModal();
+  showAdmin();
+}
+
+function deleteArticle(id) {
+  if (confirm("Удалить статью?")) {
+    articles = articles.filter(a => a.id !== id);
+    saveData();
+    showAdmin();
+  }
+}
+
+function showModal(content) {
+  document.getElementById('modal-content').innerHTML = content + `<br><br><button onclick="closeModal()">ЗАКРЫТЬ</button>`;
+  document.getElementById('modal').style.display = 'flex';
+}
+
+function closeModal() {
+  document.getElementById('modal').style.display = 'none';
+}
+
+// ==================== ЗАПУСК ====================
+showPage('login');
+
+setInterval(() => {
+  document.getElementById('current-time').textContent = new Date().toLocaleString('ru-RU');
+}, 1000);
+</script>
+</body>
+</html>
