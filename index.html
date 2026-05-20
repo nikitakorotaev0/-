@@ -95,7 +95,12 @@
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 12px;
       max-width: 700px;
-      margin: 40px auto;
+      margin: 40px auto 20px auto;
+    }
+    .logout-container {
+      display: flex;
+      justify-content: center;
+      margin-top: 30px;
     }
     .back-btn {
       margin-bottom: 15px;
@@ -212,20 +217,26 @@
     .hidden {
       display: none;
     }
-    /* Центрирование ASCII-арта */
+    /* ASCII-арт BIAR */
     .ascii-logo {
       text-align: center;
       margin-bottom: 20px;
-    }
-    .ascii-logo pre {
-      display: inline-block;
-      text-align: left;
-      background: transparent;
-      border: 1px solid var(--accent);
-      padding: 10px;
-      font-size: 10px;
+      font-family: monospace;
+      font-size: 12px;
       line-height: 1.2;
       color: var(--accent);
+      white-space: pre;
+    }
+    /* Анимация загрузки для изображений и чата */
+    .skeleton-loader {
+      background: linear-gradient(90deg, #111 25%, #1a3a1a 50%, #111 75%);
+      background-size: 200% 100%;
+      animation: loadingShimmer 1.5s infinite;
+      border-radius: 2px;
+    }
+    @keyframes loadingShimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
     }
     .img-placeholder {
       background: #111;
@@ -235,6 +246,23 @@
       color: var(--accent);
       font-size: 12px;
       margin: 10px 0;
+    }
+    .loading-bar {
+      width: 100%;
+      height: 4px;
+      background: #333;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+    .loading-bar-fill {
+      width: 30%;
+      height: 100%;
+      background: var(--accent);
+      animation: loadingLoop 1s infinite linear;
+    }
+    @keyframes loadingLoop {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(400%); }
     }
     .active-contact {
       background: var(--accent);
@@ -272,6 +300,10 @@
         width: 100%;
         margin: 4px 0;
       }
+      .logout-container button {
+        width: auto;
+        min-width: 200px;
+      }
       .chat-container {
         flex-direction: column;
       }
@@ -307,9 +339,8 @@
       .modal-content {
         padding: 15px;
       }
-      .ascii-logo pre {
-        font-size: 7px;
-        padding: 5px;
+      .ascii-logo {
+        font-size: 8px;
       }
     }
   </style>
@@ -317,7 +348,7 @@
 <body>
 
 <div class="header">
-  <div><span class="accent">[БИАР]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v3.7</div>
+  <div><span class="accent">[БИАР]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v3.8</div>
   <div><span id="current-time"></span></div>
 </div>
 
@@ -425,21 +456,16 @@
       showModal(`<h2>ДОСТУП ОТКЛОНЁН</h2><p>Недостаточный уровень доступа.</p>`);
     }
 
-    // ASCII-арт с центрированием внутри рамки
+    // ASCII-арт только "BIAR"
     function getAsciiLogo() {
       return `
         <div class="ascii-logo">
-          <pre>
-+--------------------------------------------------+
-|        ██████╗ ██╗ █████╗ ██████╗               |
-|        ██╔══██╗██║██╔══██╗██╔══██╗              |
-|        ██████╔╝██║███████║██████╔╝              |
-|        ██╔══██╗██║██╔══██║██╔══██╗              |
-|        ██████╔╝██║██║  ██║██║  ██║              |
-|        ╚═════╝ ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝              |
-|   БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ              |
-+--------------------------------------------------+
-          </pre>
+  ██████╗ ██╗ █████╗ ██████╗ 
+  ██╔══██╗██║██╔══██╗██╔══██╗
+  ██████╔╝██║███████║██████╔╝
+  ██╔══██╗██║██╔══██║██╔══██╗
+  ██████╔╝██║██║  ██║██║  ██║
+  ╚═════╝ ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝
         </div>
       `;
     }
@@ -454,9 +480,24 @@
           <button id="archive-btn">▸ АРХИВ ДОКУМЕНТОВ</button>
           <button id="account-btn">▸ АККАУНТ</button>
           <button id="chat-btn">▸ СВЯЗЬ</button>
-          <button id="logout-btn">▸ ВЫХОД ИЗ СИСТЕМЫ</button>
           <button id="admin-btn">▸ АДМИН-ПАНЕЛЬ</button>
         `;
+        mainContent.innerHTML = `
+          ${getAsciiLogo()}
+          <h2 style="text-align:center;">ТЕРМИНАЛ</h2>
+          <div class="menu-grid">
+            ${menuButtons}
+          </div>
+          <div class="logout-container">
+            <button id="logout-btn">▸ ВЫХОД ИЗ СИСТЕМЫ</button>
+          </div>
+          <div class="status-bar" style="margin-top:20px;">🔒 СЕАНС АКТИВЕН • ПРОТОКОЛ АУДИТА ВКЛЮЧЁН</div>
+        `;
+        document.getElementById('archive-btn').onclick = () => showArchive();
+        document.getElementById('account-btn').onclick = () => showAccount();
+        document.getElementById('chat-btn').onclick = () => showChat();
+        document.getElementById('admin-btn').onclick = () => showAdmin();
+        document.getElementById('logout-btn').onclick = () => { currentUser = null; document.getElementById('login-section').classList.remove('hidden'); document.getElementById('main-section').classList.add('hidden'); };
       } else {
         menuButtons = `
           <button id="archive-btn">▸ АРХИВ ДОКУМЕНТОВ</button>
@@ -464,29 +505,26 @@
           <button id="chat-btn">▸ СВЯЗЬ</button>
           <button id="record-btn">▸ ЗАПИСЬ</button>
           <button id="map-btn">▸ КАРТА</button>
-          <button id="logout-btn">▸ ВЫХОД ИЗ СИСТЕМЫ</button>
           <button id="contacts-btn">▸ КОНТАКТЫ</button>
         `;
-      }
-      mainContent.innerHTML = `
-        ${getAsciiLogo()}
-        <h2 style="text-align:center;">ТЕРМИНАЛ БИАР</h2>
-        <p style="text-align:center;">Уровень доступа: ${isAdmin ? 'M5 — Полный' : 'M2'}</p>
-        <div class="menu-grid">
-          ${menuButtons}
-        </div>
-        <div class="status-bar" style="margin-top:20px;">🔒 СЕАНС АКТИВЕН • ПРОТОКОЛ АУДИТА ВКЛЮЧЁН</div>
-      `;
-      document.getElementById('archive-btn').onclick = () => showArchive();
-      document.getElementById('account-btn').onclick = () => showAccount();
-      document.getElementById('chat-btn').onclick = () => showChat();
-      document.getElementById('logout-btn').onclick = () => { currentUser = null; document.getElementById('login-section').classList.remove('hidden'); document.getElementById('main-section').classList.add('hidden'); };
-      if (isAdmin) {
-        document.getElementById('admin-btn').onclick = () => showAdmin();
-      } else {
+        mainContent.innerHTML = `
+          ${getAsciiLogo()}
+          <h2 style="text-align:center;">ТЕРМИНАЛ</h2>
+          <div class="menu-grid">
+            ${menuButtons}
+          </div>
+          <div class="logout-container">
+            <button id="logout-btn">▸ ВЫХОД ИЗ СИСТЕМЫ</button>
+          </div>
+          <div class="status-bar" style="margin-top:20px;">🔒 СЕАНС АКТИВЕН • ПРОТОКОЛ АУДИТА ВКЛЮЧЁН</div>
+        `;
+        document.getElementById('archive-btn').onclick = () => showArchive();
+        document.getElementById('account-btn').onclick = () => showAccount();
+        document.getElementById('chat-btn').onclick = () => showChat();
         document.getElementById('record-btn').onclick = () => deniedAccess();
         document.getElementById('map-btn').onclick = () => deniedAccess();
         document.getElementById('contacts-btn').onclick = () => deniedAccess();
+        document.getElementById('logout-btn').onclick = () => { currentUser = null; document.getElementById('login-section').classList.remove('hidden'); document.getElementById('main-section').classList.add('hidden'); };
       }
     }
 
@@ -519,14 +557,17 @@
         const article = articles.find(a => a.code.toUpperCase() === code);
         if (article) {
           const showArticleModal = async (art) => {
-            // Генерируем HTML с плейсхолдерами для изображений
             let imagesHtml = '';
             if (art.images && art.images.length) {
               for (let i = 0; i < art.images.length; i++) {
                 const src = art.images[i];
                 const placeholderId = `img_${Date.now()}_${i}`;
-                imagesHtml += `<div id="${placeholderId}" class="img-placeholder">[ ЗАГРУЗКА ИЗОБРАЖЕНИЯ ... ]</div>`;
-                // Загружаем изображение асинхронно и позже подменим
+                imagesHtml += `
+                  <div id="${placeholderId}" class="img-placeholder">
+                    <div>ЗАГРУЗКА ИЗОБРАЖЕНИЯ...</div>
+                    <div class="loading-bar"><div class="loading-bar-fill"></div></div>
+                  </div>
+                `;
                 setTimeout(() => {
                   const img = new Image();
                   img.onload = () => {
@@ -597,7 +638,11 @@
             <div id="contact-si" style="padding:14px; cursor:pointer;">SI4015</div>
           </div>
           <div class="chat-area">
-            <div class="messages" id="messages"></div>
+            <div id="chat-loading" class="img-placeholder" style="margin:0; text-align:center;">
+              <div>ДЕШИФРОВКА ДАННЫХ ПЕРЕПИСОК...</div>
+              <div class="loading-bar"><div class="loading-bar-fill"></div></div>
+            </div>
+            <div class="messages" id="messages" style="display:none;"></div>
             ${inputAreaHtml}
           </div>
         </div>
@@ -608,14 +653,14 @@
       adminDiv.onclick = () => openChat('ADMIN');
       siDiv.onclick = () => openChat('SI4015');
       if (!isPlayer) {
-        document.getElementById('send-msg-btn').onclick = () => sendMessage();
-        document.getElementById('chat-input').addEventListener('keypress', e => { if(e.key === 'Enter') sendMessage(); });
+        // обработчики будут добавлены после загрузки первого чата
       }
-      await openChat('ADMIN');
+      await openChat('ADMIN', true);
     }
 
-    async function openChat(contact) {
+    async function openChat(contact, isFirstLoad = false) {
       currentChatContact = contact;
+      // Обновление активного контакта
       const adminDiv = document.getElementById('contact-admin');
       const siDiv = document.getElementById('contact-si');
       if (adminDiv && siDiv) {
@@ -627,8 +672,13 @@
           adminDiv.classList.remove('active-contact');
         }
       }
+      const loadingDiv = document.getElementById('chat-loading');
       const messagesDiv = document.getElementById('messages');
-      if (!messagesDiv) return;
+      if (loadingDiv && messagesDiv) {
+        loadingDiv.style.display = 'block';
+        messagesDiv.style.display = 'none';
+      }
+      // Загружаем сообщения (асинхронно)
       const msgs = await fetchMessages(contact);
       let html = '';
       msgs.forEach(msg => {
@@ -636,8 +686,12 @@
         const delBtn = currentUser.role === 'admin' ? `<button class="delete-msg-btn" data-id="${msg.id}">✕</button>` : '';
         html += `<div class="message ${cls}"><strong>${escapeHtml(msg.from_sender)}:</strong> ${escapeHtml(msg.text)} ${delBtn}</div>`;
       });
-      messagesDiv.innerHTML = html;
-      if (currentUser.role === 'admin') {
+      if (messagesDiv) messagesDiv.innerHTML = html;
+      if (loadingDiv && messagesDiv) {
+        loadingDiv.style.display = 'none';
+        messagesDiv.style.display = 'block';
+      }
+      if (currentUser.role === 'admin' && messagesDiv) {
         document.querySelectorAll('.delete-msg-btn').forEach(btn => {
           btn.onclick = async (e) => {
             e.stopPropagation();
@@ -648,7 +702,16 @@
           };
         });
       }
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      if (messagesDiv) messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      // Если первый раз и не плеер, навесить обработчик отправки
+      if (isFirstLoad && currentUser.role !== 'player') {
+        const sendBtn = document.getElementById('send-msg-btn');
+        const chatInput = document.getElementById('chat-input');
+        if (sendBtn && chatInput) {
+          sendBtn.onclick = () => sendMessage();
+          chatInput.addEventListener('keypress', e => { if(e.key === 'Enter') sendMessage(); });
+        }
+      }
     }
 
     async function sendMessage() {
