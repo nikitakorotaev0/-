@@ -7,197 +7,57 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <style>
-    /* (все стили такие же, как в v5.1, без изменений) */
-    :root {
-      --bg: #0a0a0a;
-      --accent: #00cc55;
-      --gray: #bbbbbb;
-    }
+    /* (стили без изменений, они есть в предыдущей версии) */
+    :root { --bg: #0a0a0a; --accent: #00cc55; --gray: #bbbbbb; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      background: var(--bg);
-      color: var(--gray);
-      font-family: 'Courier New', monospace;
-      overflow: hidden;
-      height: 100vh;
-    }
-    .header {
-      background: #0a0a0a;
-      padding: 8px 15px;
-      border-bottom: 1px solid var(--accent);
-      display: flex;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      font-size: 0.9rem;
-    }
+    body { background: var(--bg); color: var(--gray); font-family: 'Courier New', monospace; overflow: hidden; height: 100vh; }
+    .header { background: #0a0a0a; padding: 8px 15px; border-bottom: 1px solid var(--accent); display: flex; justify-content: space-between; flex-wrap: wrap; font-size: 0.9rem; }
     .accent { color: var(--accent); text-shadow: 0 0 5px var(--accent); }
     .container { padding: 20px; height: calc(100vh - 52px); overflow-y: auto; }
-    button {
-      background: transparent;
-      color: var(--accent);
-      border: 1px solid var(--accent);
-      padding: 10px 16px;
-      cursor: pointer;
-      font-family: inherit;
-      margin: 5px;
-      transition: 0.2s;
-      font-size: 0.9rem;
-    }
+    button { background: transparent; color: var(--accent); border: 1px solid var(--accent); padding: 10px 16px; cursor: pointer; font-family: inherit; margin: 5px; transition: 0.2s; font-size: 0.9rem; }
     button:hover { background: var(--accent); color: #000; transform: scale(1.02); }
-    input, textarea, select {
-      background: #111;
-      border: 1px solid #444;
-      color: var(--gray);
-      padding: 10px;
-      width: 100%;
-      font-family: inherit;
-      margin: 8px 0;
-      font-size: 1rem;
-    }
-    .modal {
-      position: fixed; top:0; left:0; right:0; bottom:0;
-      background: rgba(0,0,0,0.97);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      padding: 10px;
-    }
-    .modal-content {
-      background: #111;
-      border: 1px solid var(--accent);
-      padding: 25px;
-      max-width: 720px;
-      width: 100%;
-      max-height: 90vh;
-      overflow-y: auto;
-    }
-    .menu-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 12px;
-      max-width: 700px;
-      margin: 40px auto 20px auto;
-    }
+    input, textarea, select { background: #111; border: 1px solid #444; color: var(--gray); padding: 10px; width: 100%; font-family: inherit; margin: 8px 0; font-size: 1rem; }
+    .modal { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.97); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 10px; }
+    .modal-content { background: #111; border: 1px solid var(--accent); padding: 25px; max-width: 720px; width: 100%; max-height: 90vh; overflow-y: auto; }
+    .menu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; max-width: 700px; margin: 40px auto 20px auto; }
     .logout-container { display: flex; justify-content: center; margin-top: 30px; }
     .back-btn { margin-bottom: 15px; }
     .chat-container { display: flex; height: 65vh; border: 1px solid var(--accent); }
     .contacts { width: 240px; border-right: 1px solid #333; padding: 10px; background: #111; }
     .chat-area { flex: 1; display: flex; flex-direction: column; }
     .messages { flex: 1; padding: 15px; overflow-y: auto; background: #0a0a0a; }
-    .message {
-      margin: 10px 0;
-      padding: 8px 12px;
-      border-radius: 4px;
-      max-width: 75%;
-      word-wrap: break-word;
-    }
+    .message { margin: 10px 0; padding: 8px 12px; border-radius: 4px; max-width: 75%; word-wrap: break-word; }
     .message.admin { background: #002200; color: #00ff88; border-left: 3px solid #00ff88; }
     .message.si { background: #001122; color: #88ccff; border-left: 3px solid #88ccff; }
-    .message.player, .message.viewer {
-      background: #221100;
-      color: #ffcc88;
-      margin-left: auto;
-      text-align: right;
-      border-right: 3px solid #ffcc88;
-    }
+    .message.player, .message.viewer { background: #221100; color: #ffcc88; margin-left: auto; text-align: right; border-right: 3px solid #ffcc88; }
     .input-area { padding: 12px; border-top: 1px solid #333; background: #111; }
     .status-bar { text-align: center; padding: 6px; background: #0a0a0a; font-size: 11px; color: var(--accent); border-top: 1px solid var(--accent); }
     .delete-msg-btn { background: none; border: none; color: #ff5555; font-size: 12px; margin-left: 10px; cursor: pointer; }
-    .profile-photo {
-      width: 180px; height: 180px; border: 2px solid var(--accent);
-      background: #1a1a1a; margin: 15px auto;
-      display: flex; align-items: center; justify-content: center;
-      flex-direction: column; font-size: 12px;
-    }
-    .security-ticker {
-      position: fixed; bottom: 0; left: 0; width: 100%;
-      background: #000000cc; backdrop-filter: blur(4px);
-      color: #0f0; font-size: 10px; padding: 4px;
-      text-align: center; z-index: 99; border-top: 1px solid var(--accent);
-      white-space: nowrap; overflow-x: auto;
-    }
-    .loading-overlay {
-      position: fixed; top:0; left:0; width:100%; height:100%;
-      background: #000; z-index: 9999;
-      display: flex; align-items: center; justify-content: center;
-      flex-direction: column; color: #0f0;
-    }
+    .profile-photo { width: 180px; height: 180px; border: 2px solid var(--accent); background: #1a1a1a; margin: 15px auto; display: flex; align-items: center; justify-content: center; flex-direction: column; font-size: 12px; }
+    .security-ticker { position: fixed; bottom: 0; left: 0; width: 100%; background: #000000cc; backdrop-filter: blur(4px); color: #0f0; font-size: 10px; padding: 4px; text-align: center; z-index: 99; border-top: 1px solid var(--accent); white-space: nowrap; overflow-x: auto; }
+    .loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column; color: #0f0; }
     .hidden { display: none; }
-    .ascii-logo {
-      text-align: center; margin-bottom: 20px;
-      font-family: monospace; font-size: 12px; line-height: 1.2;
-      color: var(--accent); white-space: pre;
-    }
-    .img-placeholder {
-      background: #111; border: 1px dashed var(--accent);
-      padding: 20px; text-align: center; color: var(--accent);
-      font-size: 12px; margin: 10px 0;
-    }
+    .ascii-logo { text-align: center; margin-bottom: 20px; font-family: monospace; font-size: 12px; line-height: 1.2; color: var(--accent); white-space: pre; }
+    .img-placeholder { background: #111; border: 1px dashed var(--accent); padding: 20px; text-align: center; color: var(--accent); font-size: 12px; margin: 10px 0; }
     .loading-bar { width: 100%; height: 4px; background: #333; margin-top: 8px; overflow: hidden; }
-    .loading-bar-fill {
-      width: 30%; height: 100%; background: var(--accent);
-      animation: loadingLoop 1s infinite linear;
-    }
+    .loading-bar-fill { width: 30%; height: 100%; background: var(--accent); animation: loadingLoop 1s infinite linear; }
     @keyframes loadingLoop { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }
     .active-contact { background: var(--accent); color: #000; font-weight: bold; text-shadow: none; }
     .full-image-modal { text-align: center; }
     .full-image-modal img { max-width: 100%; max-height: 80vh; border: 2px solid var(--accent); background: #000; }
     .readonly-field { background: #0a0a0a; color: #777; cursor: not-allowed; resize: none; }
-    .file-input {
-      border: 1px solid var(--accent);
-      padding: 8px;
-      background: #111;
-      cursor: pointer;
-    }
-    .image-preview {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin: 10px 0;
-    }
-    .image-preview-item {
-      position: relative;
-      display: inline-block;
-    }
-    .image-preview-item img {
-      max-width: 100px;
-      max-height: 100px;
-      border: 1px solid var(--accent);
-    }
-    .remove-image, .remove-existing {
-      position: absolute;
-      top: -8px;
-      right: -8px;
-      background: #f00;
-      color: #fff;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      text-align: center;
-      cursor: pointer;
-      font-size: 12px;
-      line-height: 18px;
-    }
-    @media (max-width: 600px) {
-      .container { padding: 12px; }
-      .menu-grid { grid-template-columns: 1fr; gap: 10px; margin: 20px auto; }
-      button { padding: 12px; font-size: 1rem; width: 100%; margin: 4px 0; }
-      .logout-container button { width: auto; min-width: 200px; }
-      .chat-container { flex-direction: column; }
-      .contacts { width: 100%; border-right: none; border-bottom: 1px solid #333; display: flex; justify-content: space-around; }
-      .contacts div { text-align: center; flex: 1; }
-      .message { max-width: 90%; font-size: 0.9rem; }
-      .input-area select, .input-area input, .input-area button { width: 100%; margin: 5px 0; }
-      .input-area { display: flex; flex-direction: column; }
-      .ascii-logo { font-size: 8px; }
-    }
+    .file-input { border: 1px solid var(--accent); padding: 8px; background: #111; cursor: pointer; }
+    .image-preview { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
+    .image-preview-item { position: relative; display: inline-block; }
+    .image-preview-item img { max-width: 100px; max-height: 100px; border: 1px solid var(--accent); }
+    .remove-image, .remove-existing { position: absolute; top: -8px; right: -8px; background: #f00; color: #fff; border-radius: 50%; width: 20px; height: 20px; text-align: center; cursor: pointer; font-size: 12px; line-height: 18px; }
+    @media (max-width: 600px) { .container { padding: 12px; } .menu-grid { grid-template-columns: 1fr; gap: 10px; margin: 20px auto; } button { padding: 12px; font-size: 1rem; width: 100%; margin: 4px 0; } .logout-container button { width: auto; min-width: 200px; } .chat-container { flex-direction: column; } .contacts { width: 100%; border-right: none; border-bottom: 1px solid #333; display: flex; justify-content: space-around; } .contacts div { text-align: center; flex: 1; } .message { max-width: 90%; font-size: 0.9rem; } .input-area select, .input-area input, .input-area button { width: 100%; margin: 5px 0; } .input-area { display: flex; flex-direction: column; } .ascii-logo { font-size: 8px; } }
   </style>
 </head>
 <body>
 
 <div class="header">
-  <div><span class="accent">[БИАР]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v5.2</div>
+  <div><span class="accent">[БИАР]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v5.3</div>
   <div><span id="current-time"></span></div>
 </div>
 
@@ -243,17 +103,9 @@
         const fileExt = file.name.split('.').pop();
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
         const filePath = `${fileName}`;
-        const { data, error } = await supabase.storage
-          .from(STORAGE_BUCKET)
-          .upload(filePath, file, { cacheControl: '3600', upsert: false });
-        if (error) {
-          console.error("Ошибка загрузки:", error);
-          alert(`Ошибка загрузки ${file.name}: ${error.message}`);
-          return null;
-        }
-        const { data: publicUrlData } = supabase.storage
-          .from(STORAGE_BUCKET)
-          .getPublicUrl(filePath);
+        const { error } = await supabase.storage.from(STORAGE_BUCKET).upload(filePath, file, { cacheControl: '3600', upsert: false });
+        if (error) { console.error(error); alert(`Ошибка загрузки ${file.name}: ${error.message}`); return null; }
+        const { data: publicUrlData } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(filePath);
         uploadedUrls.push(publicUrlData.publicUrl);
       }
       return uploadedUrls;
@@ -276,45 +128,30 @@
     }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
     function showFullImage(src, onCloseCallback) {
-      showModal(`<div class="full-image-modal"><img src="${escapeHtml(src)}" style="max-width:100%; max-height:80vh; border:2px solid var(--accent); background:#000;"></div>`, null, () => {
-        if (onCloseCallback) onCloseCallback();
-      });
+      showModal(`<div class="full-image-modal"><img src="${escapeHtml(src)}" style="max-width:100%; max-height:80vh; border:2px solid var(--accent); background:#000;"></div>`, null, () => { if (onCloseCallback) onCloseCallback(); });
     }
     function showLoading(callback, looped = false) {
       const overlay = document.createElement('div');
       overlay.className = 'loading-overlay';
       const barHtml = `<div style="width:300px; height:20px; border:1px solid #0f0; margin-top:20px;"><div style="width:0%; height:100%; background:#0f0; ${looped ? 'animation: fillLoop 1.5s infinite linear;' : 'animation: fillAnim 0.8s ease-out forwards;'}" id="loading-fill"></div></div>`;
-      overlay.innerHTML = `
-        <div>ЗАПУСК ПРОТОКОЛА ДОСТУПА...</div>
-        ${barHtml}
-        <div style="margin-top:15px;">ДЕШИФРОВАНИЕ КЛЮЧЕЙ...</div>
-        <style>
-          @keyframes fillAnim { 0% { width:0%; } 100% { width:100%; } }
-          @keyframes fillLoop { 0% { width:0%; } 50% { width:100%; } 100% { width:0%; } }
-        </style>
-      `;
+      overlay.innerHTML = `<div>ЗАПУСК ПРОТОКОЛА ДОСТУПА...</div>${barHtml}<div style="margin-top:15px;">ДЕШИФРОВАНИЕ КЛЮЧЕЙ...</div><style>@keyframes fillAnim { 0% { width:0%; } 100% { width:100%; } } @keyframes fillLoop { 0% { width:0%; } 50% { width:100%; } 100% { width:0%; } }</style>`;
       document.body.appendChild(overlay);
-      if (!looped) {
-        setTimeout(() => { overlay.remove(); if (callback) callback(); }, 1000);
-        return null;
-      }
+      if (!looped) { setTimeout(() => { overlay.remove(); if (callback) callback(); }, 1000); return null; }
       return overlay;
     }
     function hideLoading(overlay) { if (overlay && overlay.remove) overlay.remove(); }
-    function deniedAccess() {
-      showModal(`<h2>ДОСТУП ОТКЛОНЁН</h2><p>Недостаточный уровень доступа.</p>`);
-    }
+    function deniedAccess() { showModal(`<h2>ДОСТУП ОТКЛОНЁН</h2><p>Недостаточный уровень доступа.</p>`); }
 
     // === РАБОТА С БАЗОЙ ===
     async function fetchArticlesForRole() {
       let query = supabase.from('articles').select('*');
       if (currentUser.role === 'player') {
-        query = query.eq('visible_to_viewer', false).or('visible_to_viewer.is.null');
+        query = query.or('visible_to_viewer.eq.false,visible_to_viewer.is.null');
       } else if (currentUser.role === 'viewer') {
         query = query.eq('visible_to_viewer', true);
       }
       const { data, error } = await query.order('id', { ascending: false });
-      if (error) { console.error(error); return []; }
+      if (error) { console.error("fetchArticlesForRole error:", error); showModal(`<h2>Ошибка</h2><p>${escapeHtml(error.message)}</p>`); return []; }
       return data;
     }
     async function fetchAllArticlesForAdmin() {
@@ -323,12 +160,9 @@
       return data;
     }
     async function addArticle(article) {
-      // Принудительно преобразуем visible_to_viewer в boolean
       const toInsert = { ...article, visible_to_viewer: !!article.visible_to_viewer };
-      console.log("Вставляем статью:", toInsert);
-      const { data, error } = await supabase.from('articles').insert(toInsert).select();
-      if (error) { console.error("Ошибка вставки:", error); showModal(`<h2>Ошибка сохранения</h2><p>${escapeHtml(error.message)}</p>`); return false; }
-      console.log("Успешно добавлено:", data);
+      const { error } = await supabase.from('articles').insert(toInsert);
+      if (error) { console.error(error); showModal(`<h2>Ошибка сохранения</h2><p>${escapeHtml(error.message)}</p>`); return false; }
       return true;
     }
     async function updateArticle(id, updates) {
@@ -336,141 +170,61 @@
       const { error } = await supabase.from('articles').update(toUpdate).eq('id', id);
       if (error) console.error(error);
     }
-    async function deleteArticle(id) {
-      await supabase.from('articles').delete().eq('id', id);
-    }
+    async function deleteArticle(id) { await supabase.from('articles').delete().eq('id', id); }
     async function fetchMessagesForAdminPlayer(contact) {
       const { data, error } = await supabase.from('messages').select('*').eq('contact', contact).order('id', { ascending: true });
       if (error) return [];
       return data;
     }
-    async function sendMessageToDB(contact, from, text) {
-      await supabase.from('messages').insert({ id: Date.now(), contact, from_sender: from, text, time: '' });
-    }
+    async function sendMessageToDB(contact, from, text) { await supabase.from('messages').insert({ id: Date.now(), contact, from_sender: from, text, time: '' }); }
     async function deleteMessageFromDB(id) { await supabase.from('messages').delete().eq('id', id); }
     function getViewerChatMessages(contact) {
-      if (contact === 'ADMIN') {
-        return [
-          { from_sender: "ADMIN", text: "Смотритель, проверьте архивные записи по аномалии ЕК-12.", class: "admin" },
-          { from_sender: "SEMEN LOBANOV", text: "Принято. Приступаю к анализу.", class: "viewer" }
-        ];
-      } else {
-        return [
-          { from_sender: "SI4015", text: "Полевой отчёт: запах капусты сохраняется. Рекомендую изоляцию.", class: "si" },
-          { from_sender: "SEMEN LOBANOV", text: "Понял. Готовлю документы для комитета.", class: "viewer" }
-        ];
-      }
+      if (contact === 'ADMIN') return [
+        { from_sender: "ADMIN", text: "Смотритель, проверьте архивные записи по аномалии ЕК-12.", class: "admin" },
+        { from_sender: "SEMEN LOBANOV", text: "Принято. Приступаю к анализу.", class: "viewer" }
+      ];
+      else return [
+        { from_sender: "SI4015", text: "Полевой отчёт: запах капусты сохраняется. Рекомендую изоляцию.", class: "si" },
+        { from_sender: "SEMEN LOBANOV", text: "Понял. Готовлю документы для комитета.", class: "viewer" }
+      ];
     }
 
-    function getAsciiLogo() {
-      return `<div class="ascii-logo">
-  ██████╗ ██╗ █████╗ ██████╗ 
-  ██╔══██╗██║██╔══██╗██╔══██╗
-  ██████╔╝██║███████║██████╔╝
-  ██╔══██╗██║██╔══██║██╔══██╗
-  ██████╔╝██║██║  ██║██║  ██║
-  ╚═════╝ ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝
-        </div>`;
-    }
+    function getAsciiLogo() { return `<div class="ascii-logo">\n  ██████╗ ██╗ █████╗ ██████╗ \n  ██╔══██╗██║██╔══██╗██╔══██╗\n  ██████╔╝██║███████║██████╔╝\n  ██╔══██╗██║██╔══██║██╔══██╗\n  ██████╔╝██║██║  ██║██║  ██║\n  ╚═════╝ ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝\n        </div>`; }
 
-    // === ОСНОВНОЙ ИНТЕРФЕЙС ===
     function showHome() {
       const mainContent = document.getElementById('main-content');
       const isAdmin = currentUser.role === 'admin';
-      let menuButtons = '';
-      if (isAdmin) {
-        menuButtons = `
-          <button id="archive-btn">▸ АРХИВ ДОКУМЕНТОВ</button>
-          <button id="account-btn">▸ АККАУНТ</button>
-          <button id="chat-btn">▸ СВЯЗЬ</button>
-          <button id="admin-btn">▸ АДМИН-ПАНЕЛЬ</button>
-        `;
-      } else {
-        menuButtons = `
-          <button id="archive-btn">▸ АРХИВ ДОКУМЕНТОВ</button>
-          <button id="account-btn">▸ АККАУНТ</button>
-          <button id="chat-btn">▸ СВЯЗЬ</button>
-          <button id="record-btn">▸ ЗАПИСЬ</button>
-          <button id="map-btn">▸ КАРТА</button>
-          <button id="contacts-btn">▸ КОНТАКТЫ</button>
-        `;
-      }
-      mainContent.innerHTML = `
-        ${getAsciiLogo()}
-        <h2 style="text-align:center;">ТЕРМИНАЛ</h2>
-        <div class="menu-grid">${menuButtons}</div>
-        <div class="logout-container"><button id="logout-btn">▸ ВЫХОД ИЗ СИСТЕМЫ</button></div>
-        <div class="status-bar" style="margin-top:20px;">🔒 СЕАНС АКТИВЕН • ПРОТОКОЛ АУДИТА ВКЛЮЧЁН</div>
-      `;
+      let menuButtons = isAdmin ? `<button id="archive-btn">▸ АРХИВ ДОКУМЕНТОВ</button><button id="account-btn">▸ АККАУНТ</button><button id="chat-btn">▸ СВЯЗЬ</button><button id="admin-btn">▸ АДМИН-ПАНЕЛЬ</button>` : `<button id="archive-btn">▸ АРХИВ ДОКУМЕНТОВ</button><button id="account-btn">▸ АККАУНТ</button><button id="chat-btn">▸ СВЯЗЬ</button><button id="record-btn">▸ ЗАПИСЬ</button><button id="map-btn">▸ КАРТА</button><button id="contacts-btn">▸ КОНТАКТЫ</button>`;
+      mainContent.innerHTML = `${getAsciiLogo()}<h2 style="text-align:center;">ТЕРМИНАЛ</h2><div class="menu-grid">${menuButtons}</div><div class="logout-container"><button id="logout-btn">▸ ВЫХОД ИЗ СИСТЕМЫ</button></div><div class="status-bar" style="margin-top:20px;">🔒 СЕАНС АКТИВЕН • ПРОТОКОЛ АУДИТА ВКЛЮЧЁН</div>`;
       document.getElementById('archive-btn').onclick = () => showArchive();
       document.getElementById('account-btn').onclick = () => showAccount();
       document.getElementById('chat-btn').onclick = () => showChat();
       document.getElementById('logout-btn').onclick = () => { currentUser = null; document.getElementById('login-section').classList.remove('hidden'); document.getElementById('main-section').classList.add('hidden'); };
-      if (isAdmin) {
-        document.getElementById('admin-btn').onclick = () => showAdmin();
-      } else {
-        document.getElementById('record-btn').onclick = () => deniedAccess();
-        document.getElementById('map-btn').onclick = () => deniedAccess();
-        document.getElementById('contacts-btn').onclick = () => deniedAccess();
-      }
+      if (isAdmin) document.getElementById('admin-btn').onclick = () => showAdmin();
+      else { document.getElementById('record-btn').onclick = () => deniedAccess(); document.getElementById('map-btn').onclick = () => deniedAccess(); document.getElementById('contacts-btn').onclick = () => deniedAccess(); }
     }
 
     function showAccount() {
-      let modalHtml = '';
-      if (currentUser.role === 'viewer') {
-        modalHtml = `
-          <h2>ПРОФИЛЬ АГЕНТА</h2>
-          <div class="profile-photo"><div style="font-size:32px;">🖼️</div><span>Фото изъято</span><span style="font-size:9px;">по решению комиссии №23-А</span></div>
-          <p><strong>Имя:</strong> СЕМЁН ЛОБАНОВ</p>
-          <p><strong>Должность:</strong> Смотритель архива</p>
-          <p><strong>Уровень доступа:</strong> M1 — Наблюдатель</p>
-          <p><strong>Статус:</strong> <span style="color:#00ff00;">Активен</span></p>
-          <p><strong>Гриф секретности:</strong> Секретно</p>
-        `;
-      } else {
-        modalHtml = `
-          <h2>ПРОФИЛЬ АГЕНТА</h2>
-          <div class="profile-photo"><div style="font-size:32px;">🖼️</div><span>Фото изъято</span><span style="font-size:9px;">по решению комиссии №23-А</span></div>
-          <p><strong>Имя:</strong> ${escapeHtml(currentUser.name)}</p>
-          <p><strong>Должность:</strong> Агент по устранению аномалий</p>
-          <p><strong>Уровень доступа:</strong> ${currentUser.role === 'admin' ? 'M5 (Администратор)' : 'M2'}</p>
-          <p><strong>Статус:</strong> <span style="color:#ffaa00;">Пропал без вести</span></p>
-          <p><strong>Гриф секретности:</strong> Особой важности</p>
-        `;
-      }
+      let modalHtml = currentUser.role === 'viewer' ? `<h2>ПРОФИЛЬ АГЕНТА</h2><div class="profile-photo"><div style="font-size:32px;">🖼️</div><span>Фото изъято</span><span style="font-size:9px;">по решению комиссии №23-А</span></div><p><strong>Имя:</strong> СЕМЁН ЛОБАНОВ</p><p><strong>Должность:</strong> Смотритель архива</p><p><strong>Уровень доступа:</strong> M1 — Наблюдатель</p><p><strong>Статус:</strong> <span style="color:#00ff00;">Активен</span></p><p><strong>Гриф секретности:</strong> Секретно</p>` : `<h2>ПРОФИЛЬ АГЕНТА</h2><div class="profile-photo"><div style="font-size:32px;">🖼️</div><span>Фото изъято</span><span style="font-size:9px;">по решению комиссии №23-А</span></div><p><strong>Имя:</strong> ${escapeHtml(currentUser.name)}</p><p><strong>Должность:</strong> Агент по устранению аномалий</p><p><strong>Уровень доступа:</strong> ${currentUser.role === 'admin' ? 'M5 (Администратор)' : 'M2'}</p><p><strong>Статус:</strong> <span style="color:#ffaa00;">Пропал без вести</span></p><p><strong>Гриф секретности:</strong> Особой важности</p>`;
       showModal(modalHtml);
     }
 
     async function showArchive() {
       const mainContent = document.getElementById('main-content');
       if (currentUser.role === 'viewer') {
-        mainContent.innerHTML = `
-          <button id="back-home" class="back-btn">← НАЗАД НА ГЛАВНУЮ</button>
-          <h2>ПОИСК В АРХИВЕ</h2>
-          <p style="margin:10px 0; color:var(--accent);">Введи код QQ-34 и нажми Начать Поиск</p>
-          <input type="text" id="search-code" placeholder="Введите код доступа"><br>
-          <button id="search-btn">НАЧАТЬ ПОИСК</button>
-          <div class="status-bar" style="margin-top:20px;">🔒 ДОКУМЕНТЫ ЗАШИФРОВАНЫ • ДОСТУП ПО КОДУ</div>
-        `;
+        mainContent.innerHTML = `<button id="back-home" class="back-btn">← НАЗАД НА ГЛАВНУЮ</button><h2>ПОИСК В АРХИВЕ</h2><p style="margin:10px 0; color:var(--accent);">Введи код QQ-34 и нажми Начать Поиск</p><input type="text" id="search-code" placeholder="Введите код доступа"><br><button id="search-btn">НАЧАТЬ ПОИСК</button><div class="status-bar" style="margin-top:20px;">🔒 ДОКУМЕНТЫ ЗАШИФРОВАНЫ • ДОСТУП ПО КОДУ</div>`;
         document.getElementById('back-home').onclick = () => showHome();
         document.getElementById('search-btn').onclick = async () => {
           const code = document.getElementById('search-code').value.trim().toUpperCase();
           if (code !== "QQ-34") { showModal("КОД НЕ НАЙДЕН В АРХИВЕ"); return; }
-          const { data: articles } = await supabase.from('articles').select('*').eq('code', 'QQ-34');
-          const article = articles?.[0];
+          const { data } = await supabase.from('articles').select('*').eq('code', 'QQ-34');
+          const article = data?.[0];
           if (!article) { showModal("ОШИБКА: статья не найдена в базе данных"); return; }
           await showArticleModal(article);
         };
       } else {
         const articles = await fetchArticlesForRole();
-        mainContent.innerHTML = `
-          <button id="back-home" class="back-btn">← НАЗАД НА ГЛАВНУЮ</button>
-          <h2>ПОИСК В АРХИВЕ</h2>
-          <input type="text" id="search-code" placeholder="Введите код доступа"><br>
-          <button id="search-btn">НАЧАТЬ ПОИСК</button>
-          ${currentUser.role === 'admin' ? `<br><br><h3>Всего статей: ${articles.length}</h3>` : ''}
-          <div class="status-bar" style="margin-top:20px;">🔒 ДОКУМЕНТЫ ЗАШИФРОВАНЫ • ДОСТУП ПО КОДУ</div>
-        `;
+        mainContent.innerHTML = `<button id="back-home" class="back-btn">← НАЗАД НА ГЛАВНУЮ</button><h2>ПОИСК В АРХИВЕ</h2><input type="text" id="search-code" placeholder="Введите код доступа"><br><button id="search-btn">НАЧАТЬ ПОИСК</button>${currentUser.role === 'admin' ? `<br><br><h3>Всего статей: ${articles.length}</h3>` : ''}<div class="status-bar" style="margin-top:20px;">🔒 ДОКУМЕНТЫ ЗАШИФРОВАНЫ • ДОСТУП ПО КОДУ</div>`;
         document.getElementById('back-home').onclick = () => showHome();
         document.getElementById('search-btn').onclick = async () => {
           const code = document.getElementById('search-code').value.trim().toUpperCase();
@@ -504,13 +258,7 @@
         }
       }
       let adminBtns = currentUser.role === 'admin' ? '<button id="delete-article-btn">Удалить статью</button>' : '';
-      showModal(`
-        <h2>${escapeHtml(article.title)}</h2>
-        <p><strong>Код:</strong> ${escapeHtml(article.code)}</p>
-        <p>${escapeHtml(article.text).replace(/\n/g, '<br>')}</p>
-        ${imagesHtml}
-        ${adminBtns}
-      `, () => {
+      showModal(`<h2>${escapeHtml(article.title)}</h2><p><strong>Код:</strong> ${escapeHtml(article.code)}</p><p>${escapeHtml(article.text).replace(/\n/g, '<br>')}</p>${imagesHtml}${adminBtns}`, () => {
         if (currentUser.role === 'admin') {
           const delBtn = document.getElementById('delete-article-btn');
           if (delBtn) delBtn.onclick = async () => { await deleteArticle(article.id); closeModal(); showArchive(); };
@@ -518,7 +266,6 @@
       });
     }
 
-    // Чат (без изменений, рабочий)
     let currentChatContact = "ADMIN";
     async function showChat() {
       const mainContent = document.getElementById('main-content');
@@ -526,25 +273,10 @@
       const isPlayer = currentUser.role === 'player';
       const isAdmin = currentUser.role === 'admin';
       let inputAreaHtml = '';
-      if (isViewer) {
-        inputAreaHtml = `<div class="input-area"><textarea class="readonly-field" rows="2" readonly style="resize:none; background:#0a0a0a; color:#777;">Ответы недоступны в связи с заморозкой аккаунта. Диалоги находятся в режиме архива.</textarea></div>`;
-      } else if (isPlayer) {
-        inputAreaHtml = `<div class="input-area"><textarea class="readonly-field" rows="2" readonly style="resize:none; background:#0a0a0a; color:#777;">Связь отключена в связи с пропажей агента.</textarea></div>`;
-      } else {
-        inputAreaHtml = `<div class="input-area"><select id="sender-select" style="width:30%; display:inline-block;"><option value="ADMIN">От ADMIN</option><option value="SI4015">От SI4015</option><option value="ANDREY TOCHILIN">От ANDREY TOCHILIN</option></select><input type="text" id="chat-input" placeholder="Сообщение..." style="width:50%;"><button id="send-msg-btn">ОТПРАВИТЬ</button></div>`;
-      }
-      mainContent.innerHTML = `
-        <button id="back-home-chat" class="back-btn">← НАЗАД НА ГЛАВНУЮ</button>
-        <h2>ЗАЩИЩЁННЫЙ КАНАЛ СВЯЗИ</h2>
-        <div class="chat-container">
-          <div class="contacts"><div id="contact-admin" style="padding:14px; cursor:pointer;">ADMIN</div><div id="contact-si" style="padding:14px; cursor:pointer;">SI4015</div></div>
-          <div class="chat-area">
-            <div id="chat-loading" class="img-placeholder" style="margin:0;"><div>ДЕШИФРОВКА ДАННЫХ ПЕРЕПИСОК...</div><div class="loading-bar"><div class="loading-bar-fill"></div></div></div>
-            <div class="messages" id="messages" style="display:none;"></div>
-            ${inputAreaHtml}
-          </div>
-        </div>
-      `;
+      if (isViewer) inputAreaHtml = `<div class="input-area"><textarea class="readonly-field" rows="2" readonly>Ответы недоступны в связи с заморозкой аккаунта. Диалоги находятся в режиме архива.</textarea></div>`;
+      else if (isPlayer) inputAreaHtml = `<div class="input-area"><textarea class="readonly-field" rows="2" readonly>Связь отключена в связи с пропажей агента.</textarea></div>`;
+      else inputAreaHtml = `<div class="input-area"><select id="sender-select" style="width:30%; display:inline-block;"><option value="ADMIN">От ADMIN</option><option value="SI4015">От SI4015</option><option value="ANDREY TOCHILIN">От ANDREY TOCHILIN</option></select><input type="text" id="chat-input" placeholder="Сообщение..." style="width:50%;"><button id="send-msg-btn">ОТПРАВИТЬ</button></div>`;
+      mainContent.innerHTML = `<button id="back-home-chat" class="back-btn">← НАЗАД НА ГЛАВНУЮ</button><h2>ЗАЩИЩЁННЫЙ КАНАЛ СВЯЗИ</h2><div class="chat-container"><div class="contacts"><div id="contact-admin" style="padding:14px; cursor:pointer;">ADMIN</div><div id="contact-si" style="padding:14px; cursor:pointer;">SI4015</div></div><div class="chat-area"><div id="chat-loading" class="img-placeholder" style="margin:0;"><div>ДЕШИФРОВКА ДАННЫХ ПЕРЕПИСОК...</div><div class="loading-bar"><div class="loading-bar-fill"></div></div></div><div class="messages" id="messages" style="display:none;"></div>${inputAreaHtml}</div></div>`;
       document.getElementById('back-home-chat').onclick = () => showHome();
       document.getElementById('contact-admin').onclick = () => openChat('ADMIN');
       document.getElementById('contact-si').onclick = () => openChat('SI4015');
@@ -589,10 +321,7 @@
       if (isFirstLoad && currentUser.role === 'admin') {
         const sendBtn = document.getElementById('send-msg-btn');
         const chatInput = document.getElementById('chat-input');
-        if (sendBtn && chatInput) {
-          sendBtn.onclick = () => sendMessage();
-          chatInput.addEventListener('keypress', e => { if(e.key === 'Enter') sendMessage(); });
-        }
+        if (sendBtn && chatInput) { sendBtn.onclick = () => sendMessage(); chatInput.addEventListener('keypress', e => { if(e.key === 'Enter') sendMessage(); }); }
       }
     }
 
@@ -607,18 +336,13 @@
       input.value = '';
     }
 
-    // Админ-панель
+    // Админ-панель (создание/редактирование)
     async function showAdmin() {
       const mainContent = document.getElementById('main-content');
       const articles = await fetchAllArticlesForAdmin();
       let html = `<button id="back-home-admin" class="back-btn">← НАЗАД НА ГЛАВНУЮ</button><h2>АДМИН-ПАНЕЛЬ</h2><button id="create-article-btn">+ Создать статью</button><br><br>`;
       articles.forEach(a => {
-        html += `<div style="border:1px solid #444; padding:15px; margin:10px 0;">
-          <strong>${escapeHtml(a.code)}</strong> — ${escapeHtml(a.title)}
-          ${a.visible_to_viewer ? '<span style="color:#0f0;"> [ДЛЯ VIEWER]</span>' : ''}
-          <button class="edit-article-btn" data-id="${a.id}" style="float:right; margin-left:8px;">Ред</button>
-          <button class="del-article-btn" data-id="${a.id}" style="float:right;">Удалить</button>
-        </div>`;
+        html += `<div style="border:1px solid #444; padding:15px; margin:10px 0;"><strong>${escapeHtml(a.code)}</strong> — ${escapeHtml(a.title)}${a.visible_to_viewer ? '<span style="color:#0f0;"> [ДЛЯ VIEWER]</span>' : ''}<button class="edit-article-btn" data-id="${a.id}" style="float:right; margin-left:8px;">Ред</button><button class="del-article-btn" data-id="${a.id}" style="float:right;">Удалить</button></div>`;
       });
       mainContent.innerHTML = html;
       document.getElementById('back-home-admin').onclick = () => showHome();
@@ -628,19 +352,7 @@
     }
 
     function createArticleForm() {
-      showModal(`
-        <h2>Новая статья</h2>
-        <input id="new-code" placeholder="Код (например, X-1234)"><br>
-        <input id="new-title" placeholder="Заголовок"><br>
-        <textarea id="new-text" rows="7" placeholder="Текст..."></textarea><br>
-        <div>
-          <label>Изображения (можно выбрать несколько файлов):</label>
-          <input type="file" id="new-images" multiple accept="image/jpeg,image/png,image/gif,image/webp" class="file-input">
-          <div id="new-images-preview" class="image-preview"></div>
-        </div>
-        <label style="display:block; margin:10px 0;"><input type="checkbox" id="new-viewer-flag"> Доступно для Viewer</label>
-        <button id="save-new-btn">Сохранить</button>
-      `, async () => {
+      showModal(`<h2>Новая статья</h2><input id="new-code" placeholder="Код"><br><input id="new-title" placeholder="Заголовок"><br><textarea id="new-text" rows="7" placeholder="Текст..."></textarea><br><div><label>Изображения (можно несколько):</label><input type="file" id="new-images" multiple accept="image/jpeg,image/png,image/gif,image/webp" class="file-input"><div id="new-images-preview" class="image-preview"></div></div><label style="display:block; margin:10px 0;"><input type="checkbox" id="new-viewer-flag"> Доступно для Viewer</label><button id="save-new-btn">Сохранить</button>`, async () => {
         const fileInput = document.getElementById('new-images');
         const previewDiv = document.getElementById('new-images-preview');
         fileInput.addEventListener('change', () => {
@@ -648,9 +360,7 @@
           for (const file of fileInput.files) {
             const reader = new FileReader();
             reader.onload = (e) => {
-              const imgDiv = document.createElement('div');
-              imgDiv.className = 'image-preview-item';
-              imgDiv.innerHTML = `<img src="${e.target.result}"><span class="remove-image" data-file="${file.name}">✕</span>`;
+              const imgDiv = document.createElement('div'); imgDiv.className = 'image-preview-item'; imgDiv.innerHTML = `<img src="${e.target.result}"><span class="remove-image" data-file="${file.name}">✕</span>`;
               previewDiv.appendChild(imgDiv);
               imgDiv.querySelector('.remove-image').onclick = () => imgDiv.remove();
             };
@@ -658,34 +368,24 @@
           }
         });
         const saveBtn = document.getElementById('save-new-btn');
-        if (saveBtn) {
-          saveBtn.onclick = async () => {
-            const code = document.getElementById('new-code').value.trim();
-            const title = document.getElementById('new-title').value.trim();
-            const text = document.getElementById('new-text').value.trim();
-            if (!code || !title || !text) { alert("Заполните код, заголовок и текст"); return; }
-            const visibleToViewer = document.getElementById('new-viewer-flag').checked;
-            let imageUrls = [];
-            const files = fileInput.files;
-            if (files && files.length > 0) {
-              const uploadOverlay = showLoading(null, true);
-              imageUrls = await uploadImages(Array.from(files));
-              hideLoading(uploadOverlay);
-              if (!imageUrls) return;
-            }
-            const newArticle = {
-              id: Date.now(),
-              code: code,
-              title: title,
-              text: text,
-              images: imageUrls,
-              date: new Date().toISOString().split('T')[0],
-              visible_to_viewer: visibleToViewer
-            };
-            const success = await addArticle(newArticle);
-            if (success) { closeModal(); showAdmin(); }
-          };
-        }
+        if (saveBtn) saveBtn.onclick = async () => {
+          const code = document.getElementById('new-code').value.trim();
+          const title = document.getElementById('new-title').value.trim();
+          const text = document.getElementById('new-text').value.trim();
+          if (!code || !title || !text) { alert("Заполните код, заголовок и текст"); return; }
+          const visibleToViewer = document.getElementById('new-viewer-flag').checked;
+          let imageUrls = [];
+          const files = fileInput.files;
+          if (files && files.length > 0) {
+            const uploadOverlay = showLoading(null, true);
+            imageUrls = await uploadImages(Array.from(files));
+            hideLoading(uploadOverlay);
+            if (!imageUrls) return;
+          }
+          const newArticle = { id: Date.now(), code, title, text, images: imageUrls, date: new Date().toISOString().split('T')[0], visible_to_viewer: visibleToViewer };
+          const success = await addArticle(newArticle);
+          if (success) { closeModal(); showAdmin(); }
+        };
       });
     }
 
@@ -694,25 +394,7 @@
       const a = articles.find(x => x.id === id);
       if (!a) return;
       const existingImages = a.images || [];
-      showModal(`
-        <h2>Редактирование</h2>
-        <input id="edit-code" value="${escapeHtml(a.code)}"><br>
-        <input id="edit-title" value="${escapeHtml(a.title)}"><br>
-        <textarea id="edit-text" rows="8">${escapeHtml(a.text)}</textarea><br>
-        <div>
-          <label>Добавить новые изображения (можно несколько):</label>
-          <input type="file" id="edit-images" multiple accept="image/jpeg,image/png,image/gif,image/webp" class="file-input">
-          <div id="edit-images-preview" class="image-preview"></div>
-        </div>
-        <div>
-          <label>Текущие изображения:</label>
-          <div id="current-images-list" class="image-preview">
-            ${existingImages.map((url, idx) => `<div class="image-preview-item"><img src="${escapeHtml(url)}"><span class="remove-existing" data-url="${escapeHtml(url)}">✕</span></div>`).join('')}
-          </div>
-        </div>
-        <label style="display:block; margin:10px 0;"><input type="checkbox" id="edit-viewer-flag" ${a.visible_to_viewer ? 'checked' : ''}> Доступно для Viewer</label>
-        <button id="save-edit-btn">Сохранить изменения</button>
-      `, async () => {
+      showModal(`<h2>Редактирование</h2><input id="edit-code" value="${escapeHtml(a.code)}"><br><input id="edit-title" value="${escapeHtml(a.title)}"><br><textarea id="edit-text" rows="8">${escapeHtml(a.text)}</textarea><br><div><label>Добавить новые изображения:</label><input type="file" id="edit-images" multiple accept="image/jpeg,image/png,image/gif,image/webp" class="file-input"><div id="edit-images-preview" class="image-preview"></div></div><div><label>Текущие изображения:</label><div id="current-images-list" class="image-preview">${existingImages.map((url, idx) => `<div class="image-preview-item"><img src="${escapeHtml(url)}"><span class="remove-existing" data-url="${escapeHtml(url)}">✕</span></div>`).join('')}</div></div><label style="display:block; margin:10px 0;"><input type="checkbox" id="edit-viewer-flag" ${a.visible_to_viewer ? 'checked' : ''}> Доступно для Viewer</label><button id="save-edit-btn">Сохранить изменения</button>`, async () => {
         const fileInput = document.getElementById('edit-images');
         const previewDiv = document.getElementById('edit-images-preview');
         fileInput.addEventListener('change', () => {
@@ -720,44 +402,30 @@
           for (const file of fileInput.files) {
             const reader = new FileReader();
             reader.onload = (e) => {
-              const imgDiv = document.createElement('div');
-              imgDiv.className = 'image-preview-item';
-              imgDiv.innerHTML = `<img src="${e.target.result}"><span class="remove-image" data-file="${file.name}">✕</span>`;
+              const imgDiv = document.createElement('div'); imgDiv.className = 'image-preview-item'; imgDiv.innerHTML = `<img src="${e.target.result}"><span class="remove-image" data-file="${file.name}">✕</span>`;
               previewDiv.appendChild(imgDiv);
               imgDiv.querySelector('.remove-image').onclick = () => imgDiv.remove();
             };
             reader.readAsDataURL(file);
           }
         });
-        document.querySelectorAll('.remove-existing').forEach(btn => {
-          btn.onclick = () => btn.parentElement.remove();
-        });
+        document.querySelectorAll('.remove-existing').forEach(btn => { btn.onclick = () => btn.parentElement.remove(); });
         const saveBtn = document.getElementById('save-edit-btn');
-        if (saveBtn) {
-          saveBtn.onclick = async () => {
-            const visibleToViewer = document.getElementById('edit-viewer-flag').checked;
-            const remainingUrls = [];
-            document.querySelectorAll('#current-images-list .image-preview-item img').forEach(img => remainingUrls.push(img.src));
-            const files = fileInput.files;
-            let newUrls = [];
-            if (files && files.length > 0) {
-              const uploadOverlay = showLoading(null, true);
-              newUrls = await uploadImages(Array.from(files));
-              hideLoading(uploadOverlay);
-              if (!newUrls) return;
-            }
-            const allUrls = [...remainingUrls, ...newUrls];
-            await updateArticle(id, {
-              code: document.getElementById('edit-code').value.trim(),
-              title: document.getElementById('edit-title').value.trim(),
-              text: document.getElementById('edit-text').value.trim(),
-              images: allUrls,
-              visible_to_viewer: visibleToViewer
-            });
-            closeModal();
-            showAdmin();
-          };
-        }
+        if (saveBtn) saveBtn.onclick = async () => {
+          const visibleToViewer = document.getElementById('edit-viewer-flag').checked;
+          const remainingUrls = []; document.querySelectorAll('#current-images-list .image-preview-item img').forEach(img => remainingUrls.push(img.src));
+          const files = fileInput.files;
+          let newUrls = [];
+          if (files && files.length > 0) {
+            const uploadOverlay = showLoading(null, true);
+            newUrls = await uploadImages(Array.from(files));
+            hideLoading(uploadOverlay);
+            if (!newUrls) return;
+          }
+          const allUrls = [...remainingUrls, ...newUrls];
+          await updateArticle(id, { code: document.getElementById('edit-code').value.trim(), title: document.getElementById('edit-title').value.trim(), text: document.getElementById('edit-text').value.trim(), images: allUrls, visible_to_viewer: visibleToViewer });
+          closeModal(); showAdmin();
+        };
       });
     }
 
@@ -771,38 +439,15 @@
         let loadingOverlay = null;
         if (currentUser.role !== 'admin') loadingOverlay = showLoading(null, true);
         if (currentUser.role === 'player' || currentUser.role === 'viewer') {
-          setTimeout(() => {
-            if (loadingOverlay) hideLoading(loadingOverlay);
-            document.getElementById('login-section').classList.add('hidden');
-            document.getElementById('main-section').classList.remove('hidden');
-            showHome();
-          }, 1000);
-        } else {
-          if (loadingOverlay) hideLoading(loadingOverlay);
-          document.getElementById('login-section').classList.add('hidden');
-          document.getElementById('main-section').classList.remove('hidden');
-          showHome();
-        }
+          setTimeout(() => { if (loadingOverlay) hideLoading(loadingOverlay); document.getElementById('login-section').classList.add('hidden'); document.getElementById('main-section').classList.remove('hidden'); showHome(); }, 1000);
+        } else { if (loadingOverlay) hideLoading(loadingOverlay); document.getElementById('login-section').classList.add('hidden'); document.getElementById('main-section').classList.remove('hidden'); showHome(); }
       } else alert("НЕВЕРНЫЙ КОД АГЕНТА ИЛИ ПАРОЛЬ");
     };
 
-    setInterval(() => {
-      const el = document.getElementById('current-time');
-      if (el) el.textContent = new Date().toLocaleString('ru-RU');
-    }, 1000);
-    const tickerMessages = [
-      "СЕТЬ ШИФРУЕТСЯ • AES-256 • ЗАЩИЩЁННЫЙ СЕРВЕР",
-      "ВНЕШНИЕ КАНАЛЫ ЗАБЛОКИРОВАНЫ • ПРОСЛУШКА НЕВОЗМОЖНА",
-      "КЛЮЧИ ОБНОВЛЕНЫ • ПРОТОКОЛ M-5",
-      "ПОПЫТКА НЕСАНКЦИОНИРОВАННОГО ДОСТУПА ЗАФИКСИРОВАНА",
-      "СИСТЕМА АНТИ-ФИШИНГ АКТИВНА"
-    ];
+    setInterval(() => { const el = document.getElementById('current-time'); if (el) el.textContent = new Date().toLocaleString('ru-RU'); }, 1000);
+    const tickerMessages = ["СЕТЬ ШИФРУЕТСЯ • AES-256", "ВНЕШНИЕ КАНАЛЫ ЗАБЛОКИРОВАНЫ", "КЛЮЧИ ОБНОВЛЕНЫ • ПРОТОКОЛ M-5", "ПОПЫТКА НЕСАНКЦИОНИРОВАННОГО ДОСТУПА", "СИСТЕМА АНТИ-ФИШИНГ АКТИВНА"];
     let idx = 0;
-    setInterval(() => {
-      const footer = document.getElementById('security-footer');
-      if (footer) footer.textContent = tickerMessages[idx % tickerMessages.length] + " • " + new Date().toLocaleTimeString();
-      idx++;
-    }, 10000);
+    setInterval(() => { const footer = document.getElementById('security-footer'); if (footer) footer.textContent = tickerMessages[idx % tickerMessages.length] + " • " + new Date().toLocaleTimeString(); idx++; }, 10000);
   })();
 </script>
 </body>
