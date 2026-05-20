@@ -12,11 +12,7 @@
       --accent: #00cc55;
       --gray: #bbbbbb;
     }
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       background: var(--bg);
       color: var(--gray);
@@ -33,15 +29,8 @@
       flex-wrap: wrap;
       font-size: 0.9rem;
     }
-    .accent {
-      color: var(--accent);
-      text-shadow: 0 0 5px var(--accent);
-    }
-    .container {
-      padding: 20px;
-      height: calc(100vh - 52px);
-      overflow-y: auto;
-    }
+    .accent { color: var(--accent); text-shadow: 0 0 5px var(--accent); }
+    .container { padding: 20px; height: calc(100vh - 52px); overflow-y: auto; }
     button {
       background: transparent;
       color: var(--accent);
@@ -53,11 +42,7 @@
       transition: 0.2s;
       font-size: 0.9rem;
     }
-    button:hover {
-      background: var(--accent);
-      color: #000;
-      transform: scale(1.02);
-    }
+    button:hover { background: var(--accent); color: #000; transform: scale(1.02); }
     input, textarea, select {
       background: #111;
       border: 1px solid #444;
@@ -69,11 +54,7 @@
       font-size: 1rem;
     }
     .modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
+      position: fixed; top:0; left:0; right:0; bottom:0;
       background: rgba(0,0,0,0.97);
       display: none;
       align-items: center;
@@ -97,36 +78,12 @@
       max-width: 700px;
       margin: 40px auto 20px auto;
     }
-    .logout-container {
-      display: flex;
-      justify-content: center;
-      margin-top: 30px;
-    }
-    .back-btn {
-      margin-bottom: 15px;
-    }
-    .chat-container {
-      display: flex;
-      height: 65vh;
-      border: 1px solid var(--accent);
-    }
-    .contacts {
-      width: 240px;
-      border-right: 1px solid #333;
-      padding: 10px;
-      background: #111;
-    }
-    .chat-area {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-    .messages {
-      flex: 1;
-      padding: 15px;
-      overflow-y: auto;
-      background: #0a0a0a;
-    }
+    .logout-container { display: flex; justify-content: center; margin-top: 30px; }
+    .back-btn { margin-bottom: 15px; }
+    .chat-container { display: flex; height: 65vh; border: 1px solid var(--accent); }
+    .contacts { width: 240px; border-right: 1px solid #333; padding: 10px; background: #111; }
+    .chat-area { flex: 1; display: flex; flex-direction: column; }
+    .messages { flex: 1; padding: 15px; overflow-y: auto; background: #0a0a0a; }
     .message {
       margin: 10px 0;
       padding: 8px 12px;
@@ -134,16 +91,8 @@
       max-width: 75%;
       word-wrap: break-word;
     }
-    .message.admin {
-      background: #002200;
-      color: #00ff88;
-      border-left: 3px solid #00ff88;
-    }
-    .message.si {
-      background: #001122;
-      color: #88ccff;
-      border-left: 3px solid #88ccff;
-    }
+    .message.admin { background: #002200; color: #00ff88; border-left: 3px solid #00ff88; }
+    .message.si { background: #001122; color: #88ccff; border-left: 3px solid #88ccff; }
     .message.player, .message.viewer {
       background: #221100;
       color: #ffcc88;
@@ -151,138 +100,49 @@
       text-align: right;
       border-right: 3px solid #ffcc88;
     }
-    .input-area {
-      padding: 12px;
-      border-top: 1px solid #333;
-      background: #111;
-    }
-    .status-bar {
-      text-align: center;
-      padding: 6px;
-      background: #0a0a0a;
-      font-size: 11px;
-      color: var(--accent);
-      border-top: 1px solid var(--accent);
-    }
-    .delete-msg-btn {
-      background: none;
-      border: none;
-      color: #ff5555;
-      font-size: 12px;
-      margin-left: 10px;
-      cursor: pointer;
-    }
+    .input-area { padding: 12px; border-top: 1px solid #333; background: #111; }
+    .status-bar { text-align: center; padding: 6px; background: #0a0a0a; font-size: 11px; color: var(--accent); border-top: 1px solid var(--accent); }
+    .delete-msg-btn { background: none; border: none; color: #ff5555; font-size: 12px; margin-left: 10px; cursor: pointer; }
     .profile-photo {
-      width: 180px;
-      height: 180px;
-      border: 2px solid var(--accent);
-      background: #1a1a1a;
-      margin: 15px auto;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      font-size: 12px;
+      width: 180px; height: 180px; border: 2px solid var(--accent);
+      background: #1a1a1a; margin: 15px auto;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; font-size: 12px;
     }
     .security-ticker {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      background: #000000cc;
-      backdrop-filter: blur(4px);
-      color: #0f0;
-      font-size: 10px;
-      padding: 4px;
-      text-align: center;
-      z-index: 99;
-      border-top: 1px solid var(--accent);
-      white-space: nowrap;
-      overflow-x: auto;
+      position: fixed; bottom: 0; left: 0; width: 100%;
+      background: #000000cc; backdrop-filter: blur(4px);
+      color: #0f0; font-size: 10px; padding: 4px;
+      text-align: center; z-index: 99; border-top: 1px solid var(--accent);
+      white-space: nowrap; overflow-x: auto;
     }
     .loading-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: #000;
-      z-index: 9999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      color: #0f0;
+      position: fixed; top:0; left:0; width:100%; height:100%;
+      background: #000; z-index: 9999;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; color: #0f0;
     }
-    .hidden {
-      display: none;
-    }
+    .hidden { display: none; }
     .ascii-logo {
-      text-align: center;
-      margin-bottom: 20px;
-      font-family: monospace;
-      font-size: 12px;
-      line-height: 1.2;
-      color: var(--accent);
-      white-space: pre;
-    }
-    .skeleton-loader {
-      background: linear-gradient(90deg, #111 25%, #1a3a1a 50%, #111 75%);
-      background-size: 200% 100%;
-      animation: loadingShimmer 1.5s infinite;
-      border-radius: 2px;
-    }
-    @keyframes loadingShimmer {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
+      text-align: center; margin-bottom: 20px;
+      font-family: monospace; font-size: 12px; line-height: 1.2;
+      color: var(--accent); white-space: pre;
     }
     .img-placeholder {
-      background: #111;
-      border: 1px dashed var(--accent);
-      padding: 20px;
-      text-align: center;
-      color: var(--accent);
-      font-size: 12px;
-      margin: 10px 0;
+      background: #111; border: 1px dashed var(--accent);
+      padding: 20px; text-align: center; color: var(--accent);
+      font-size: 12px; margin: 10px 0;
     }
-    .loading-bar {
-      width: 100%;
-      height: 4px;
-      background: #333;
-      margin-top: 8px;
-      overflow: hidden;
-    }
+    .loading-bar { width: 100%; height: 4px; background: #333; margin-top: 8px; overflow: hidden; }
     .loading-bar-fill {
-      width: 30%;
-      height: 100%;
-      background: var(--accent);
+      width: 30%; height: 100%; background: var(--accent);
       animation: loadingLoop 1s infinite linear;
     }
-    @keyframes loadingLoop {
-      0% { transform: translateX(-100%); }
-      100% { transform: translateX(400%); }
-    }
-    .active-contact {
-      background: var(--accent);
-      color: #000;
-      font-weight: bold;
-      text-shadow: none;
-    }
-    .full-image-modal {
-      text-align: center;
-    }
-    .full-image-modal img {
-      max-width: 100%;
-      max-height: 80vh;
-      border: 2px solid var(--accent);
-      background: #000;
-    }
-    .readonly-field {
-      background: #0a0a0a;
-      color: #777;
-      cursor: not-allowed;
-      resize: none;
-    }
+    @keyframes loadingLoop { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }
+    .active-contact { background: var(--accent); color: #000; font-weight: bold; text-shadow: none; }
+    .full-image-modal { text-align: center; }
+    .full-image-modal img { max-width: 100%; max-height: 80vh; border: 2px solid var(--accent); background: #000; }
+    .readonly-field { background: #0a0a0a; color: #777; cursor: not-allowed; resize: none; }
     @media (max-width: 600px) {
       .container { padding: 12px; }
       .menu-grid { grid-template-columns: 1fr; gap: 10px; margin: 20px auto; }
@@ -294,9 +154,6 @@
       .message { max-width: 90%; font-size: 0.9rem; }
       .input-area select, .input-area input, .input-area button { width: 100%; margin: 5px 0; }
       .input-area { display: flex; flex-direction: column; }
-      .input-area select { width: 100%; }
-      .input-area input { width: 100%; }
-      .modal-content { padding: 15px; }
       .ascii-logo { font-size: 8px; }
     }
   </style>
@@ -304,7 +161,7 @@
 <body>
 
 <div class="header">
-  <div><span class="accent">[БИАР]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v4.0</div>
+  <div><span class="accent">[БИАР]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v4.1</div>
   <div><span id="current-time"></span></div>
 </div>
 
@@ -335,7 +192,6 @@
     const SUPABASE_ANON_KEY = "sb_publishable_MoW2nFpIaGZIQwEsKjQubw_T0ko9O7q";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Хэши паролей
     const hash = (pwd) => CryptoJS.SHA256(pwd).toString();
     const users = {
       "AT2167": { hash: hash("AAF2615w"), role: "player", name: "ANDREY TOCHILIN" },
@@ -344,7 +200,7 @@
     };
     let currentUser = null;
 
-    // === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
+    // Вспомогательные функции
     function escapeHtml(str) {
       if (!str) return '';
       return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;');
@@ -366,51 +222,65 @@
         if (onCloseCallback) onCloseCallback();
       });
     }
-    function showLoading(callback) {
+    function showLoading(callback, looped = false) {
       const overlay = document.createElement('div');
       overlay.className = 'loading-overlay';
-      overlay.innerHTML = `<div>ЗАПУСК ПРОТОКОЛА ДОСТУПА...</div><div style="width:300px; height:20px; border:1px solid #0f0; margin-top:20px;"><div style="width:0%; height:100%; background:#0f0; animation: fillAnim 0.8s ease-out forwards;"></div></div><div style="margin-top:15px;">ДЕШИФРОВАНИЕ КЛЮЧЕЙ...</div><style> @keyframes fillAnim { 0% { width:0%; } 100% { width:100%; } } </style>`;
+      const barHtml = `<div style="width:300px; height:20px; border:1px solid #0f0; margin-top:20px;"><div style="width:0%; height:100%; background:#0f0; ${looped ? 'animation: fillLoop 1.5s infinite linear;' : 'animation: fillAnim 0.8s ease-out forwards;'}" id="loading-fill"></div></div>`;
+      overlay.innerHTML = `
+        <div>ЗАПУСК ПРОТОКОЛА ДОСТУПА...</div>
+        ${barHtml}
+        <div style="margin-top:15px;">ДЕШИФРОВАНИЕ КЛЮЧЕЙ...</div>
+        <style>
+          @keyframes fillAnim { 0% { width:0%; } 100% { width:100%; } }
+          @keyframes fillLoop { 0% { width:0%; } 50% { width:100%; } 100% { width:0%; } }
+        </style>
+      `;
       document.body.appendChild(overlay);
-      setTimeout(() => { overlay.remove(); callback(); }, 1000);
-    }
-    function deniedAccess() {
-      showModal(`<h2>ДОСТУП ОТКЛОНЁН</h2><p>Недостаточный уровень доступа.</p>`);
-    }
-
-    // === ИНИЦИАЛИЗАЦИЯ БД: ДОБАВЛЯЕМ ПОЛЕ visible_to_viewer И СТАТЬЮ ДЛЯ VIEWER ===
-    async function initDatabase() {
-      // Добавляем колонку visible_to_viewer, если её нет
-      try {
-        await supabase.from('articles').select('visible_to_viewer').limit(1);
-      } catch(e) {
-        await supabase.rpc('add_column_if_not_exists', { 
-          table_name: 'articles', 
-          column_name: 'visible_to_viewer', 
-          column_type: 'boolean' 
-        }).catch(async () => {
-          // Если RPC нет, выполняем сырой SQL через REST (не рекомендуется, но для простоты)
-          await supabase.from('articles').update({ visible_to_viewer: false }).eq('id', 0);
-        });
-      }
-      // Проверяем, есть ли статья QQ-34 для viewer
-      const { data: existing } = await supabase.from('articles').select('id').eq('code', 'QQ-34');
-      if (!existing || existing.length === 0) {
-        await supabase.from('articles').insert({
-          id: 999999,
-          code: "QQ-34",
-          title: "Отчёт",
-          text: "Аномалия ЕК-12 - Квашеная капуста убийца\n\nОбъект представляет собой трёхлитровую банку квашеной капусты 1987 года заготовки. При вскрытии ёмкости фиксируется выброс психоактивных газов, вызывающих у личного состава непреодолимое желание съесть содержимое. Три сотрудника погибли от разрыва желудка. Капуста проявляет признаки разума: самостоятельно передвигается по объекту, шепчет рецепты борща и обещает 'вечный уксус'. Уровень угрозы пересмотрен до 'Еврейская мама'. Рекомендуется изоляция в свинцовом контейнере с надписью 'Не открывать, мать вашу'.",
-          images: ["https://th.bing.com/th/id/R.4a4be0d7cc063589dbe4d388811b1b30?rik=QlJpY43uUq47Yw&pid=ImgRaw&r=0"],
-          date: new Date().toISOString().split('T')[0],
-          visible_to_viewer: true
-        });
+      if (!looped) {
+        setTimeout(() => { overlay.remove(); if (callback) callback(); }, 1000);
       } else {
-        // Обновим существующую, если вдруг флаг сбит
-        await supabase.from('articles').update({ visible_to_viewer: true }).eq('code', 'QQ-34');
+        // Зацикленная загрузка – оставляем на экране, пока не вызовут удаление
+        return overlay;
+      }
+      return null;
+    }
+    function hideLoading(overlay) {
+      if (overlay && overlay.remove) overlay.remove();
+    }
+
+    // Проверка наличия колонки visible_to_viewer
+    async function ensureViewerColumn() {
+      // Пробуем выполнить запрос, который вернёт ошибку, если колонки нет
+      try {
+        const { error } = await supabase.from('articles').select('visible_to_viewer').limit(1);
+        if (error && error.message.includes('column "visible_to_viewer" does not exist')) {
+          // Колонка отсутствует. Если пользователь – админ, показываем инструкцию
+          if (currentUser && currentUser.role === 'admin') {
+            showModal(`
+              <h2>ОШИБКА НАСТРОЙКИ БАЗЫ ДАННЫХ</h2>
+              <p>Отсутствует колонка <strong>visible_to_viewer</strong> в таблице <strong>articles</strong>.</p>
+              <p>Пожалуйста, выполните в Supabase (SQL Editor) следующий код:</p>
+              <pre style="background:#000; padding:10px; color:#0f0; overflow-x:auto;">ALTER TABLE articles ADD COLUMN IF NOT EXISTS visible_to_viewer BOOLEAN DEFAULT false;
+UPDATE articles SET visible_to_viewer = false WHERE visible_to_viewer IS NULL;
+INSERT INTO articles (id, code, title, text, images, date, visible_to_viewer)
+VALUES (999999, 'QQ-34', 'Отчёт', 'Аномалия ЕК-12 - Квашеная капуста убийца\\n\\nОбъект представляет собой трёхлитровую банку квашеной капусты 1987 года заготовки...', ARRAY['https://th.bing.com/th/id/R.4a4be0d7cc063589dbe4d388811b1b30?rik=QlJpY43uUq47Yw&pid=ImgRaw&r=0'], CURRENT_DATE, true)
+ON CONFLICT (id) DO NOTHING;</pre>
+              <p>После выполнения обновите страницу.</p>
+            `);
+            return false;
+          } else {
+            showModal(`<h2>ТЕХНИЧЕСКИЕ РАБОТЫ</h2><p>База данных настраивается. Попробуйте позже.</p>`);
+            return false;
+          }
+        }
+        return true;
+      } catch(e) {
+        console.error(e);
+        return true;
       }
     }
 
-    // === РАБОТА С БАЗОЙ (с учётом видимости) ===
+    // === РАБОТА С БАЗОЙ ===
     async function fetchArticlesForRole() {
       let query = supabase.from('articles').select('*');
       if (currentUser.role === 'player') {
@@ -428,7 +298,7 @@
       return data;
     }
     async function addArticle(article) {
-      const { data, error } = await supabase.from('articles').insert(article).select();
+      const { error } = await supabase.from('articles').insert(article);
       if (error) { console.error(error); showModal(`<h2>Ошибка сохранения</h2><p>${escapeHtml(error.message)}</p>`); return false; }
       return true;
     }
@@ -439,7 +309,6 @@
     async function deleteArticle(id) {
       await supabase.from('articles').delete().eq('id', id);
     }
-    // Для чата (viewer использует статику, остальные из БД)
     async function fetchMessagesForAdminPlayer(contact) {
       const { data, error } = await supabase.from('messages').select('*').eq('contact', contact).order('id', { ascending: true });
       if (error) return [];
@@ -450,7 +319,6 @@
     }
     async function deleteMessageFromDB(id) { await supabase.from('messages').delete().eq('id', id); }
 
-    // Статические сообщения для viewer
     function getViewerChatMessages(contact) {
       if (contact === 'ADMIN') {
         return [
@@ -465,25 +333,22 @@
       }
     }
 
-    // === ASCII-ЛОГО ===
+    // ASCII-лого
     function getAsciiLogo() {
-      return `
-        <div class="ascii-logo">
+      return `<div class="ascii-logo">
   ██████╗ ██╗ █████╗ ██████╗ 
   ██╔══██╗██║██╔══██╗██╔══██╗
   ██████╔╝██║███████║██████╔╝
   ██╔══██╗██║██╔══██║██╔══██╗
   ██████╔╝██║██║  ██║██║  ██║
   ╚═════╝ ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝
-        </div>
-      `;
+        </div>`;
     }
 
-    // === ОСНОВНОЙ ИНТЕРФЕЙС ===
+    // Главный экран
     function showHome() {
       const mainContent = document.getElementById('main-content');
       const isAdmin = currentUser.role === 'admin';
-      const isViewer = currentUser.role === 'viewer';
       let menuButtons = '';
       if (isAdmin) {
         menuButtons = `
@@ -505,12 +370,8 @@
       mainContent.innerHTML = `
         ${getAsciiLogo()}
         <h2 style="text-align:center;">ТЕРМИНАЛ</h2>
-        <div class="menu-grid">
-          ${menuButtons}
-        </div>
-        <div class="logout-container">
-          <button id="logout-btn">▸ ВЫХОД ИЗ СИСТЕМЫ</button>
-        </div>
+        <div class="menu-grid">${menuButtons}</div>
+        <div class="logout-container"><button id="logout-btn">▸ ВЫХОД ИЗ СИСТЕМЫ</button></div>
         <div class="status-bar" style="margin-top:20px;">🔒 СЕАНС АКТИВЕН • ПРОТОКОЛ АУДИТА ВКЛЮЧЁН</div>
       `;
       document.getElementById('archive-btn').onclick = () => showArchive();
@@ -552,7 +413,11 @@
       showModal(modalHtml);
     }
 
-    // === АРХИВ (с учётом роли) ===
+    function deniedAccess() {
+      showModal(`<h2>ДОСТУП ОТКЛОНЁН</h2><p>Недостаточный уровень доступа.</p>`);
+    }
+
+    // Архив
     async function showArchive() {
       const mainContent = document.getElementById('main-content');
       if (currentUser.role === 'viewer') {
@@ -567,52 +432,11 @@
         document.getElementById('back-home').onclick = () => showHome();
         document.getElementById('search-btn').onclick = async () => {
           const code = document.getElementById('search-code').value.trim().toUpperCase();
-          if (code !== "QQ-34") {
-            showModal("КОД НЕ НАЙДЕН В АРХИВЕ");
-            return;
-          }
-          // Получаем статью QQ-34 из БД (она уже есть)
+          if (code !== "QQ-34") { showModal("КОД НЕ НАЙДЕН В АРХИВЕ"); return; }
           const { data: articles } = await supabase.from('articles').select('*').eq('code', 'QQ-34');
           const article = articles?.[0];
-          if (!article) {
-            showModal("ОШИБКА: статья не найдена в базе данных");
-            return;
-          }
-          const showArticleModal = async (art) => {
-            let imagesHtml = '';
-            if (art.images && art.images.length) {
-              for (let i = 0; i < art.images.length; i++) {
-                const src = art.images[i];
-                const placeholderId = `img_${Date.now()}_${i}`;
-                imagesHtml += `
-                  <div id="${placeholderId}" class="img-placeholder">
-                    <div>ЗАГРУЗКА ИЗОБРАЖЕНИЯ...</div>
-                    <div class="loading-bar"><div class="loading-bar-fill"></div></div>
-                  </div>
-                `;
-                setTimeout(() => {
-                  const img = new Image();
-                  img.onload = () => {
-                    const container = document.getElementById(placeholderId);
-                    if (container) {
-                      container.innerHTML = `<img src="${escapeHtml(src)}" style="max-width:100%; margin:10px 0; cursor:pointer;" class="article-img" data-src="${escapeHtml(src)}">`;
-                      const newImg = container.querySelector('.article-img');
-                      if (newImg) newImg.onclick = (e) => { e.stopPropagation(); showFullImage(newImg.getAttribute('data-src'), () => showArticleModal(art)); };
-                    }
-                  };
-                  img.onerror = () => { const container = document.getElementById(placeholderId); if (container) container.innerHTML = '<div style="color:#f00;">[ ОШИБКА ЗАГРУЗКИ ИЗОБРАЖЕНИЯ ]</div>'; };
-                  img.src = src;
-                }, 10);
-              }
-            }
-            showModal(`
-              <h2>${escapeHtml(art.title)}</h2>
-              <p><strong>Код:</strong> ${escapeHtml(art.code)}</p>
-              <p>${escapeHtml(art.text).replace(/\n/g, '<br>')}</p>
-              ${imagesHtml}
-            `);
-          };
-          showArticleModal(article);
+          if (!article) { showModal("ОШИБКА: статья не найдена в базе данных"); return; }
+          await showArticleModal(article);
         };
       } else {
         const articles = await fetchArticlesForRole();
@@ -628,55 +452,50 @@
         document.getElementById('search-btn').onclick = async () => {
           const code = document.getElementById('search-code').value.trim().toUpperCase();
           const article = articles.find(a => a.code.toUpperCase() === code);
-          if (article) {
-            const showArticleModal = async (art) => {
-              let imagesHtml = '';
-              if (art.images && art.images.length) {
-                for (let i = 0; i < art.images.length; i++) {
-                  const src = art.images[i];
-                  const placeholderId = `img_${Date.now()}_${i}`;
-                  imagesHtml += `
-                    <div id="${placeholderId}" class="img-placeholder">
-                      <div>ЗАГРУЗКА ИЗОБРАЖЕНИЯ...</div>
-                      <div class="loading-bar"><div class="loading-bar-fill"></div></div>
-                    </div>
-                  `;
-                  setTimeout(() => {
-                    const img = new Image();
-                    img.onload = () => {
-                      const container = document.getElementById(placeholderId);
-                      if (container) {
-                        container.innerHTML = `<img src="${escapeHtml(src)}" style="max-width:100%; margin:10px 0; cursor:pointer;" class="article-img" data-src="${escapeHtml(src)}">`;
-                        const newImg = container.querySelector('.article-img');
-                        if (newImg) newImg.onclick = (e) => { e.stopPropagation(); showFullImage(newImg.getAttribute('data-src'), () => showArticleModal(art)); };
-                      }
-                    };
-                    img.onerror = () => { const container = document.getElementById(placeholderId); if (container) container.innerHTML = '<div style="color:#f00;">[ ОШИБКА ЗАГРУЗКИ ИЗОБРАЖЕНИЯ ]</div>'; };
-                    img.src = src;
-                  }, 10);
-                }
-              }
-              let adminBtns = currentUser.role === 'admin' ? '<button id="delete-article-btn">Удалить статью</button>' : '';
-              showModal(`
-                <h2>${escapeHtml(art.title)}</h2>
-                <p><strong>Код:</strong> ${escapeHtml(art.code)}</p>
-                <p>${escapeHtml(art.text).replace(/\n/g, '<br>')}</p>
-                ${imagesHtml}
-                ${adminBtns}
-              `, () => {
-                if (currentUser.role === 'admin') {
-                  const delBtn = document.getElementById('delete-article-btn');
-                  if (delBtn) delBtn.onclick = async () => { await deleteArticle(art.id); closeModal(); showArchive(); };
-                }
-              });
-            };
-            showArticleModal(article);
-          } else showModal("КОД НЕ НАЙДЕН В АРХИВЕ");
+          if (article) await showArticleModal(article);
+          else showModal("КОД НЕ НАЙДЕН В АРХИВЕ");
         };
       }
     }
 
-    // === ЧАТ ===
+    async function showArticleModal(article) {
+      let imagesHtml = '';
+      if (article.images && article.images.length) {
+        for (let i = 0; i < article.images.length; i++) {
+          const src = article.images[i];
+          const placeholderId = `img_${Date.now()}_${i}`;
+          imagesHtml += `<div id="${placeholderId}" class="img-placeholder"><div>ЗАГРУЗКА ИЗОБРАЖЕНИЯ...</div><div class="loading-bar"><div class="loading-bar-fill"></div></div></div>`;
+          setTimeout(() => {
+            const img = new Image();
+            img.onload = () => {
+              const container = document.getElementById(placeholderId);
+              if (container) {
+                container.innerHTML = `<img src="${escapeHtml(src)}" style="max-width:100%; margin:10px 0; cursor:pointer;" class="article-img" data-src="${escapeHtml(src)}">`;
+                const newImg = container.querySelector('.article-img');
+                if (newImg) newImg.onclick = (e) => { e.stopPropagation(); showFullImage(newImg.getAttribute('data-src'), () => showArticleModal(article)); };
+              }
+            };
+            img.onerror = () => { const container = document.getElementById(placeholderId); if (container) container.innerHTML = '<div style="color:#f00;">[ ОШИБКА ЗАГРУЗКИ ИЗОБРАЖЕНИЯ ]</div>'; };
+            img.src = src;
+          }, 10);
+        }
+      }
+      let adminBtns = currentUser.role === 'admin' ? '<button id="delete-article-btn">Удалить статью</button>' : '';
+      showModal(`
+        <h2>${escapeHtml(article.title)}</h2>
+        <p><strong>Код:</strong> ${escapeHtml(article.code)}</p>
+        <p>${escapeHtml(article.text).replace(/\n/g, '<br>')}</p>
+        ${imagesHtml}
+        ${adminBtns}
+      `, () => {
+        if (currentUser.role === 'admin') {
+          const delBtn = document.getElementById('delete-article-btn');
+          if (delBtn) delBtn.onclick = async () => { await deleteArticle(article.id); closeModal(); showArchive(); };
+        }
+      });
+    }
+
+    // Чат
     let currentChatContact = "ADMIN";
     async function showChat() {
       const mainContent = document.getElementById('main-content');
@@ -685,85 +504,46 @@
       const isAdmin = currentUser.role === 'admin';
       let inputAreaHtml = '';
       if (isViewer) {
-        inputAreaHtml = `
-          <div class="input-area">
-            <textarea class="readonly-field" rows="2" readonly style="resize:none; background:#0a0a0a; color:#777;">Ответы недоступны в связи с заморозкой аккаунта. Диалоги находятся в режиме архива.</textarea>
-          </div>
-        `;
+        inputAreaHtml = `<div class="input-area"><textarea class="readonly-field" rows="2" readonly style="resize:none; background:#0a0a0a; color:#777;">Ответы недоступны в связи с заморозкой аккаунта. Диалоги находятся в режиме архива.</textarea></div>`;
       } else if (isPlayer) {
-        inputAreaHtml = `
-          <div class="input-area">
-            <textarea class="readonly-field" rows="2" readonly style="resize:none; background:#0a0a0a; color:#777;">Связь отключена в связи с пропажей агента.</textarea>
-          </div>
-        `;
+        inputAreaHtml = `<div class="input-area"><textarea class="readonly-field" rows="2" readonly style="resize:none; background:#0a0a0a; color:#777;">Связь отключена в связи с пропажей агента.</textarea></div>`;
       } else {
-        inputAreaHtml = `
-          <div class="input-area">
-            <select id="sender-select" style="width:30%; display:inline-block;">
-              <option value="ADMIN">От ADMIN</option>
-              <option value="SI4015">От SI4015</option>
-              <option value="ANDREY TOCHILIN">От ANDREY TOCHILIN</option>
-            </select>
-            <input type="text" id="chat-input" placeholder="Сообщение..." style="width:50%;">
-            <button id="send-msg-btn">ОТПРАВИТЬ</button>
-          </div>
-        `;
+        inputAreaHtml = `<div class="input-area"><select id="sender-select" style="width:30%; display:inline-block;"><option value="ADMIN">От ADMIN</option><option value="SI4015">От SI4015</option><option value="ANDREY TOCHILIN">От ANDREY TOCHILIN</option></select><input type="text" id="chat-input" placeholder="Сообщение..." style="width:50%;"><button id="send-msg-btn">ОТПРАВИТЬ</button></div>`;
       }
       mainContent.innerHTML = `
         <button id="back-home-chat" class="back-btn">← НАЗАД НА ГЛАВНУЮ</button>
         <h2>ЗАЩИЩЁННЫЙ КАНАЛ СВЯЗИ</h2>
         <div class="chat-container">
-          <div class="contacts">
-            <div id="contact-admin" style="padding:14px; cursor:pointer;">ADMIN</div>
-            <div id="contact-si" style="padding:14px; cursor:pointer;">SI4015</div>
-          </div>
+          <div class="contacts"><div id="contact-admin" style="padding:14px; cursor:pointer;">ADMIN</div><div id="contact-si" style="padding:14px; cursor:pointer;">SI4015</div></div>
           <div class="chat-area">
-            <div id="chat-loading" class="img-placeholder" style="margin:0; text-align:center;">
-              <div>ДЕШИФРОВКА ДАННЫХ ПЕРЕПИСОК...</div>
-              <div class="loading-bar"><div class="loading-bar-fill"></div></div>
-            </div>
+            <div id="chat-loading" class="img-placeholder" style="margin:0;"><div>ДЕШИФРОВКА ДАННЫХ ПЕРЕПИСОК...</div><div class="loading-bar"><div class="loading-bar-fill"></div></div></div>
             <div class="messages" id="messages" style="display:none;"></div>
             ${inputAreaHtml}
           </div>
         </div>
       `;
       document.getElementById('back-home-chat').onclick = () => showHome();
-      const adminDiv = document.getElementById('contact-admin');
-      const siDiv = document.getElementById('contact-si');
-      adminDiv.onclick = () => openChat('ADMIN');
-      siDiv.onclick = () => openChat('SI4015');
-      if (isAdmin) {
-        // обработчики отправки будут добавлены после загрузки сообщений
-      }
+      document.getElementById('contact-admin').onclick = () => openChat('ADMIN');
+      document.getElementById('contact-si').onclick = () => openChat('SI4015');
+      if (isAdmin) { /* обработчики добавятся после загрузки */ }
       await openChat('ADMIN', true);
     }
 
     async function openChat(contact, isFirstLoad = false) {
       currentChatContact = contact;
-      // Подсветка активного контакта
       const adminDiv = document.getElementById('contact-admin');
       const siDiv = document.getElementById('contact-si');
       if (adminDiv && siDiv) {
-        if (contact === 'ADMIN') {
-          adminDiv.classList.add('active-contact');
-          siDiv.classList.remove('active-contact');
-        } else {
-          siDiv.classList.add('active-contact');
-          adminDiv.classList.remove('active-contact');
-        }
+        if (contact === 'ADMIN') { adminDiv.classList.add('active-contact'); siDiv.classList.remove('active-contact'); }
+        else { siDiv.classList.add('active-contact'); adminDiv.classList.remove('active-contact'); }
       }
       const loadingDiv = document.getElementById('chat-loading');
       const messagesDiv = document.getElementById('messages');
-      if (loadingDiv && messagesDiv) {
-        loadingDiv.style.display = 'block';
-        messagesDiv.style.display = 'none';
-      }
+      if (loadingDiv && messagesDiv) { loadingDiv.style.display = 'block'; messagesDiv.style.display = 'none'; }
       let html = '';
       if (currentUser.role === 'viewer') {
         const staticMsgs = getViewerChatMessages(contact);
-        staticMsgs.forEach(msg => {
-          html += `<div class="message ${msg.class}"><strong>${escapeHtml(msg.from_sender)}:</strong> ${escapeHtml(msg.text)}</div>`;
-        });
+        staticMsgs.forEach(msg => { html += `<div class="message ${msg.class}"><strong>${escapeHtml(msg.from_sender)}:</strong> ${escapeHtml(msg.text)}</div>`; });
       } else {
         const msgs = await fetchMessagesForAdminPlayer(contact);
         msgs.forEach(msg => {
@@ -773,18 +553,12 @@
         });
       }
       if (messagesDiv) messagesDiv.innerHTML = html;
-      if (loadingDiv && messagesDiv) {
-        loadingDiv.style.display = 'none';
-        messagesDiv.style.display = 'block';
-      }
+      if (loadingDiv && messagesDiv) { loadingDiv.style.display = 'none'; messagesDiv.style.display = 'block'; }
       if (currentUser.role === 'admin' && messagesDiv) {
         document.querySelectorAll('.delete-msg-btn').forEach(btn => {
           btn.onclick = async (e) => {
             e.stopPropagation();
-            if (confirm("Удалить сообщение?")) {
-              await deleteMessageFromDB(parseInt(btn.getAttribute('data-id')));
-              await openChat(currentChatContact);
-            }
+            if (confirm("Удалить сообщение?")) { await deleteMessageFromDB(parseInt(btn.getAttribute('data-id'))); await openChat(currentChatContact); }
           };
         });
       }
@@ -810,7 +584,7 @@
       input.value = '';
     }
 
-    // === АДМИН-ПАНЕЛЬ С ЧЕКБОКСОМ "ДЛЯ VIEWER" ===
+    // Админ-панель с чекбоксом "Для Viewer"
     async function showAdmin() {
       const mainContent = document.getElementById('main-content');
       const articles = await fetchAllArticlesForAdmin();
@@ -826,12 +600,8 @@
       mainContent.innerHTML = html;
       document.getElementById('back-home-admin').onclick = () => showHome();
       document.getElementById('create-article-btn').onclick = () => createArticleForm();
-      document.querySelectorAll('.edit-article-btn').forEach(btn => {
-        btn.onclick = () => editArticle(parseInt(btn.getAttribute('data-id')));
-      });
-      document.querySelectorAll('.del-article-btn').forEach(btn => {
-        btn.onclick = async () => { if(confirm("Удалить?")) { await deleteArticle(parseInt(btn.getAttribute('data-id'))); showAdmin(); } };
-      });
+      document.querySelectorAll('.edit-article-btn').forEach(btn => { btn.onclick = () => editArticle(parseInt(btn.getAttribute('data-id'))); });
+      document.querySelectorAll('.del-article-btn').forEach(btn => { btn.onclick = async () => { if(confirm("Удалить?")) { await deleteArticle(parseInt(btn.getAttribute('data-id'))); showAdmin(); } }; });
     }
 
     function createArticleForm() {
@@ -844,31 +614,23 @@
         <input id="new-image2" placeholder="Ссылка на фото 2 (необязательно)"><br>
         <label style="display:block; margin:10px 0;"><input type="checkbox" id="new-viewer-flag"> Доступно для Viewer</label>
         <button id="save-new-btn">Сохранить</button>
-      `,
-      () => {
+      `, () => {
         const saveBtn = document.getElementById('save-new-btn');
-        if (saveBtn) {
-          saveBtn.onclick = async () => {
-            const code = document.getElementById('new-code').value.trim();
-            const title = document.getElementById('new-title').value.trim();
-            const text = document.getElementById('new-text').value.trim();
-            if (!code || !title || !text) { alert("Заполните код, заголовок и текст"); return; }
-            const images = [];
-            const img1 = document.getElementById('new-image1').value.trim();
-            const img2 = document.getElementById('new-image2').value.trim();
-            if (img1) images.push(img1);
-            if (img2) images.push(img2);
-            const visibleToViewer = document.getElementById('new-viewer-flag').checked;
-            const newArticle = {
-              id: Date.now(),
-              code, title, text, images,
-              date: new Date().toISOString().split('T')[0],
-              visible_to_viewer: visibleToViewer
-            };
-            const success = await addArticle(newArticle);
-            if (success) { closeModal(); showAdmin(); }
-          };
-        }
+        if (saveBtn) saveBtn.onclick = async () => {
+          const code = document.getElementById('new-code').value.trim();
+          const title = document.getElementById('new-title').value.trim();
+          const text = document.getElementById('new-text').value.trim();
+          if (!code || !title || !text) { alert("Заполните код, заголовок и текст"); return; }
+          const images = [];
+          const img1 = document.getElementById('new-image1').value.trim();
+          const img2 = document.getElementById('new-image2').value.trim();
+          if (img1) images.push(img1);
+          if (img2) images.push(img2);
+          const visibleToViewer = document.getElementById('new-viewer-flag').checked;
+          const newArticle = { id: Date.now(), code, title, text, images, date: new Date().toISOString().split('T')[0], visible_to_viewer: visibleToViewer };
+          const success = await addArticle(newArticle);
+          if (success) { closeModal(); showAdmin(); }
+        };
       });
     }
 
@@ -876,7 +638,6 @@
       const articles = await fetchAllArticlesForAdmin();
       const a = articles.find(x => x.id === id);
       if (!a) return;
-      const isViewerFlag = a.visible_to_viewer === true;
       showModal(`
         <h2>Редактирование</h2>
         <input id="edit-code" value="${escapeHtml(a.code)}"><br>
@@ -884,49 +645,58 @@
         <textarea id="edit-text" rows="8">${escapeHtml(a.text)}</textarea><br>
         <input id="edit-image1" value="${escapeHtml(a.images?.[0]||'')}" placeholder="Ссылка на фото 1"><br>
         <input id="edit-image2" value="${escapeHtml(a.images?.[1]||'')}" placeholder="Ссылка на фото 2"><br>
-        <label style="display:block; margin:10px 0;"><input type="checkbox" id="edit-viewer-flag" ${isViewerFlag ? 'checked' : ''}> Доступно для Viewer</label>
+        <label style="display:block; margin:10px 0;"><input type="checkbox" id="edit-viewer-flag" ${a.visible_to_viewer ? 'checked' : ''}> Доступно для Viewer</label>
         <button id="save-edit-btn">Сохранить изменения</button>
-      `,
-      () => {
+      `, () => {
         const saveBtn = document.getElementById('save-edit-btn');
-        if (saveBtn) {
-          saveBtn.onclick = async () => {
-            const images = [];
-            const img1 = document.getElementById('edit-image1').value.trim();
-            const img2 = document.getElementById('edit-image2').value.trim();
-            if (img1) images.push(img1);
-            if (img2) images.push(img2);
-            const visibleToViewer = document.getElementById('edit-viewer-flag').checked;
-            await updateArticle(id, {
-              code: document.getElementById('edit-code').value.trim(),
-              title: document.getElementById('edit-title').value.trim(),
-              text: document.getElementById('edit-text').value.trim(),
-              images: images,
-              visible_to_viewer: visibleToViewer
-            });
-            closeModal();
-            showAdmin();
-          };
-        }
+        if (saveBtn) saveBtn.onclick = async () => {
+          const images = [];
+          const img1 = document.getElementById('edit-image1').value.trim();
+          const img2 = document.getElementById('edit-image2').value.trim();
+          if (img1) images.push(img1);
+          if (img2) images.push(img2);
+          const visibleToViewer = document.getElementById('edit-viewer-flag').checked;
+          await updateArticle(id, {
+            code: document.getElementById('edit-code').value.trim(),
+            title: document.getElementById('edit-title').value.trim(),
+            text: document.getElementById('edit-text').value.trim(),
+            images: images,
+            visible_to_viewer: visibleToViewer
+          });
+          closeModal(); showAdmin();
+        };
       });
     }
 
-    // === ВХОД ===
+    // === ВХОД С ЗАГРУЗКОЙ ДЛЯ VIEWER ===
     document.getElementById('login-btn').onclick = async () => {
       const login = document.getElementById('login-input').value.trim();
       const password = document.getElementById('pass-input').value.trim();
       const user = users[login];
       if (user && CryptoJS.SHA256(password).toString() === user.hash) {
         currentUser = { login, role: user.role, name: user.name };
-        // Инициализируем БД (добавляем колонку и статью для viewer)
-        await initDatabase();
+        // Показываем загрузку для всех, кроме admin (админ входит мгновенно)
+        let loadingOverlay = null;
+        if (currentUser.role !== 'admin') {
+          loadingOverlay = showLoading(null, true); // зацикленная анимация
+        }
+        // Проверяем наличие колонки
+        const ok = await ensureViewerColumn();
+        if (!ok) {
+          if (loadingOverlay) hideLoading(loadingOverlay);
+          return;
+        }
+        // Загружаем главный экран
         if (currentUser.role === 'player' || currentUser.role === 'viewer') {
-          showLoading(() => {
+          // Для player и viewer – задержка, имитирующая загрузку (1 секунда)
+          setTimeout(() => {
+            if (loadingOverlay) hideLoading(loadingOverlay);
             document.getElementById('login-section').classList.add('hidden');
             document.getElementById('main-section').classList.remove('hidden');
             showHome();
-          });
+          }, 1000);
         } else {
+          if (loadingOverlay) hideLoading(loadingOverlay);
           document.getElementById('login-section').classList.add('hidden');
           document.getElementById('main-section').classList.remove('hidden');
           showHome();
