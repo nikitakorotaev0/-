@@ -173,7 +173,7 @@
 <body>
 
 <div class="header">
-  <div><span class="accent">[БИАР]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v3.0</div>
+  <div><span class="accent">[БИАР]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v3.1</div>
   <div><span id="current-time"></span></div>
 </div>
 
@@ -253,9 +253,23 @@
       if (error) { console.error(error); return []; }
       return data;
     }
-    async function addArticle(article) { await supabase.from('articles').insert(article); }
-    async function updateArticle(id, updates) { await supabase.from('articles').update(updates).eq('id', id); }
-    async function deleteArticle(id) { await supabase.from('articles').delete().eq('id', id); }
+    async function addArticle(article) {
+      const { error } = await supabase.from('articles').insert(article);
+      if (error) {
+        console.error("Ошибка при добавлении статьи:", error);
+        alert("Ошибка сохранения: " + error.message);
+        return false;
+      }
+      return true;
+    }
+    async function updateArticle(id, updates) {
+      const { error } = await supabase.from('articles').update(updates).eq('id', id);
+      if (error) console.error(error);
+    }
+    async function deleteArticle(id) {
+      const { error } = await supabase.from('articles').delete().eq('id', id);
+      if (error) console.error(error);
+    }
     async function fetchMessages(contact) {
       const { data, error } = await supabase.from('messages').select('*').eq('contact', contact).order('id', { ascending: true });
       if (error) return [];
@@ -265,6 +279,11 @@
       await supabase.from('messages').insert({ id: Date.now(), contact, from_sender: from, text, time: '' });
     }
     async function deleteMessageFromDB(id) { await supabase.from('messages').delete().eq('id', id); }
+
+    // === ЗАГЛУШКА ДЛЯ НЕДОСТУПНЫХ РАЗДЕЛОВ ===
+    function deniedAccess() {
+      showModal(`<h2>ДОСТУП ОТКЛОНЁН</h2><p>Недостаточный уровень доступа.</p><p style="font-size:12px;">Ваш аккаунт не авторизован для просмотра этого раздела.</p>`);
+    }
 
     // === ОСНОВНОЙ ИНТЕРФЕЙС ===
     function showHome() {
@@ -276,6 +295,9 @@
           <button id="archive-btn">АРХИВ ДОКУМЕНТОВ</button>
           <button id="account-btn">АККАУНТ</button>
           <button id="chat-btn">СВЯЗЬ</button>
+          <button id="record-btn">ЗАПИСЬ</button>
+          <button id="map-btn">КАРТА</button>
+          <button id="contacts-btn">КОНТАКТЫ</button>
           <button id="logout-btn">ВЫХОД ИЗ СИСТЕМЫ</button>
           ${currentUser.role === 'admin' ? '<button id="admin-btn">АДМИН-ПАНЕЛЬ</button>' : ''}
         </div>
@@ -284,6 +306,9 @@
       document.getElementById('archive-btn').onclick = () => showArchive();
       document.getElementById('account-btn').onclick = () => showAccount();
       document.getElementById('chat-btn').onclick = () => showChat();
+      document.getElementById('record-btn').onclick = () => deniedAccess();
+      document.getElementById('map-btn').onclick = () => deniedAccess();
+      document.getElementById('contacts-btn').onclick = () => deniedAccess();
       document.getElementById('logout-btn').onclick = () => { currentUser = null; document.getElementById('login-section').classList.remove('hidden'); document.getElementById('main-section').classList.add('hidden'); };
       if (currentUser.role === 'admin') document.getElementById('admin-btn').onclick = () => showAdmin();
     }
@@ -434,20 +459,40 @@
     function createArticleForm() {
       showModal(`
         <h2>Новая статья</h2>
-        <input id="new-code" placeholder="Код"><br>
+        <input id="new-code" placeholder="Код (например, X-1234)"><br>
         <input id="new-title" placeholder="Заголовок"><br>
-        <textarea id="new-text" rows="7" placeholder="Текст"></textarea><br>
-        <input id="new-image1" placeholder="Ссылка на фото 1"><br>
-        <input id="new-image2" placeholder="Ссылка на фото 2"><br>
+        <textarea id="new-text" rows="7" placeholder="Текст..."></textarea><br>
+        <input id="new-image1" placeholder="Ссылка на фото 1 (необязательно)"><br>
+        <input id="new-image2" placeholder="Ссылка на фото 2 (необязательно)"><br>
         <button id="save-new-btn">Сохранить</button>
       `, async () => {
-        document.getElementById('save-new-btn').onclick = async () => {
+        const saveBtn = document.getElementById('save-new-btn');
+        saveBtn.onclick = async () => {
           const code = document.getElementById('new-code').value.trim();
           const title = document.getElementById('new-title').value.trim();
           const text = document.getElementById('new-text').value.trim();
-          if (!code || !title || !text) { alert("Заполните обязательные поля"); return; }
-          await addArticle({ id: Date.now(), code, title, text, images: [document.getElementById('new-image1').value.trim(), document.getElementById('new-image2').value.trim()].filter(Boolean), date: new Date().toISOString().split('T')[0] });
-          closeModal(); showAdmin();
+          if (!code || !title || !text) {
+            alert("Заполните код, заголовок и текст");
+            return;
+          }
+          const images = [];
+          const img1 = document.getElementById('new-image1').value.trim();
+          const img2 = document.getElementById('new-image2').value.trim();
+          if (img1) images.push(img1);
+          if (img2) images.push(img2);
+          const newArticle = {
+            id: Date.now(),
+            code: code,
+            title: title,
+            text: text,
+            images: images,
+            date: new Date().toISOString().split('T')[0]
+          };
+          const success = await addArticle(newArticle);
+          if (success) {
+            closeModal();
+            showAdmin();
+          }
         };
       });
     }
@@ -461,18 +506,24 @@
         <input id="edit-code" value="${escapeHtml(a.code)}"><br>
         <input id="edit-title" value="${escapeHtml(a.title)}"><br>
         <textarea id="edit-text" rows="8">${escapeHtml(a.text)}</textarea><br>
-        <input id="edit-image1" value="${escapeHtml(a.images?.[0]||'')}"><br>
-        <input id="edit-image2" value="${escapeHtml(a.images?.[1]||'')}"><br>
+        <input id="edit-image1" value="${escapeHtml(a.images?.[0]||'')}" placeholder="Ссылка на фото 1"><br>
+        <input id="edit-image2" value="${escapeHtml(a.images?.[1]||'')}" placeholder="Ссылка на фото 2"><br>
         <button id="save-edit-btn">Сохранить</button>
       `, async () => {
         document.getElementById('save-edit-btn').onclick = async () => {
+          const images = [];
+          const img1 = document.getElementById('edit-image1').value.trim();
+          const img2 = document.getElementById('edit-image2').value.trim();
+          if (img1) images.push(img1);
+          if (img2) images.push(img2);
           await updateArticle(id, {
             code: document.getElementById('edit-code').value.trim(),
             title: document.getElementById('edit-title').value.trim(),
             text: document.getElementById('edit-text').value.trim(),
-            images: [document.getElementById('edit-image1').value.trim(), document.getElementById('edit-image2').value.trim()].filter(Boolean)
+            images: images
           });
-          closeModal(); showAdmin();
+          closeModal();
+          showAdmin();
         };
       });
     }
