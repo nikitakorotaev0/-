@@ -7,41 +7,281 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <style>
-    :root { --bg: #0a0a0a; --accent: #00cc55; --gray: #bbbbbb; }
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { background: var(--bg); color: var(--gray); font-family: 'Courier New', monospace; overflow: hidden; height: 100vh; }
-    .header { background: #0a0a0a; padding: 8px 15px; border-bottom: 1px solid var(--accent); display: flex; justify-content: space-between; flex-wrap: wrap; }
-    .accent { color: var(--accent); text-shadow: 0 0 5px var(--accent); }
-    .container { padding: 20px; height: calc(100vh - 52px); overflow-y: auto; }
-    button { background: transparent; color: var(--accent); border: 1px solid var(--accent); padding: 10px 16px; cursor: pointer; font-family: inherit; margin: 5px; transition: 0.2s; }
-    button:hover { background: var(--accent); color: #000; transform: scale(1.02); }
-    input, textarea, select { background: #111; border: 1px solid #444; color: var(--gray); padding: 10px; width: 100%; font-family: inherit; margin: 8px 0; }
-    .modal { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.97); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 10px; }
-    .modal-content { background: #111; border: 1px solid var(--accent); padding: 25px; max-width: 720px; width: 100%; max-height: 90vh; overflow-y: auto; }
-    .menu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; max-width: 700px; margin: 40px auto; }
-    .back-btn { margin-bottom: 15px; }
-    .chat-container { display: flex; height: 65vh; border: 1px solid var(--accent); }
-    .contacts { width: 240px; border-right: 1px solid #333; padding: 10px; background: #111; }
-    .chat-area { flex: 1; display: flex; flex-direction: column; }
-    .messages { flex: 1; padding: 15px; overflow-y: auto; background: #0a0a0a; }
-    .message { margin: 10px 0; padding: 8px 12px; border-radius: 4px; max-width: 75%; word-wrap: break-word; }
-    .message.admin { background: #002200; color: #00ff88; border-left: 3px solid #00ff88; }
-    .message.si { background: #001122; color: #88ccff; border-left: 3px solid #88ccff; }
-    .message.player { background: #221100; color: #ffcc88; margin-left: auto; text-align: right; border-right: 3px solid #ffcc88; }
-    .input-area { padding: 12px; border-top: 1px solid #333; background: #111; }
-    .status-bar { text-align: center; padding: 6px; background: #0a0a0a; font-size: 11px; color: var(--accent); border-top: 1px solid var(--accent); }
-    .delete-msg-btn { background: none; border: none; color: #ff5555; font-size: 12px; margin-left: 10px; cursor: pointer; }
-    .profile-photo { width: 180px; height: 180px; border: 2px solid var(--accent); background: #1a1a1a; margin: 15px auto; display: flex; align-items: center; justify-content: center; flex-direction: column; font-size: 12px; }
-    .security-ticker { position: fixed; bottom: 0; left: 0; width: 100%; background: #000000cc; backdrop-filter: blur(4px); color: #0f0; font-size: 10px; padding: 4px; text-align: center; z-index: 99; border-top: 1px solid var(--accent); }
-    .loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column; color: #0f0; }
-    .hidden { display: none; }
-    @media (max-width: 600px) { .menu-grid { grid-template-columns: 1fr; } .chat-container { flex-direction: column; } .contacts { width: 100%; border-right: none; border-bottom: 1px solid #333; } .message { max-width: 90%; } }
+    :root {
+      --bg: #0a0a0a;
+      --accent: #00cc55;
+      --gray: #bbbbbb;
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: var(--bg);
+      color: var(--gray);
+      font-family: 'Courier New', monospace;
+      overflow: hidden;
+      height: 100vh;
+    }
+    .header {
+      background: #0a0a0a;
+      padding: 8px 15px;
+      border-bottom: 1px solid var(--accent);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      font-size: 0.9rem;
+    }
+    .accent {
+      color: var(--accent);
+      text-shadow: 0 0 5px var(--accent);
+    }
+    .container {
+      padding: 20px;
+      height: calc(100vh - 52px);
+      overflow-y: auto;
+    }
+    button {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      padding: 10px 16px;
+      cursor: pointer;
+      font-family: inherit;
+      margin: 5px;
+      transition: 0.2s;
+      font-size: 0.9rem;
+    }
+    button:hover {
+      background: var(--accent);
+      color: #000;
+      transform: scale(1.02);
+    }
+    input, textarea, select {
+      background: #111;
+      border: 1px solid #444;
+      color: var(--gray);
+      padding: 10px;
+      width: 100%;
+      font-family: inherit;
+      margin: 8px 0;
+      font-size: 1rem;
+    }
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.97);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 10px;
+    }
+    .modal-content {
+      background: #111;
+      border: 1px solid var(--accent);
+      padding: 25px;
+      max-width: 720px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      max-width: 700px;
+      margin: 40px auto;
+    }
+    .back-btn {
+      margin-bottom: 15px;
+    }
+    .chat-container {
+      display: flex;
+      height: 65vh;
+      border: 1px solid var(--accent);
+    }
+    .contacts {
+      width: 240px;
+      border-right: 1px solid #333;
+      padding: 10px;
+      background: #111;
+    }
+    .chat-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .messages {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+      background: #0a0a0a;
+    }
+    .message {
+      margin: 10px 0;
+      padding: 8px 12px;
+      border-radius: 4px;
+      max-width: 75%;
+      word-wrap: break-word;
+    }
+    .message.admin {
+      background: #002200;
+      color: #00ff88;
+      border-left: 3px solid #00ff88;
+    }
+    .message.si {
+      background: #001122;
+      color: #88ccff;
+      border-left: 3px solid #88ccff;
+    }
+    .message.player {
+      background: #221100;
+      color: #ffcc88;
+      margin-left: auto;
+      text-align: right;
+      border-right: 3px solid #ffcc88;
+    }
+    .input-area {
+      padding: 12px;
+      border-top: 1px solid #333;
+      background: #111;
+    }
+    .status-bar {
+      text-align: center;
+      padding: 6px;
+      background: #0a0a0a;
+      font-size: 11px;
+      color: var(--accent);
+      border-top: 1px solid var(--accent);
+    }
+    .delete-msg-btn {
+      background: none;
+      border: none;
+      color: #ff5555;
+      font-size: 12px;
+      margin-left: 10px;
+      cursor: pointer;
+    }
+    .profile-photo {
+      width: 180px;
+      height: 180px;
+      border: 2px solid var(--accent);
+      background: #1a1a1a;
+      margin: 15px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      font-size: 12px;
+    }
+    .security-ticker {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: #000000cc;
+      backdrop-filter: blur(4px);
+      color: #0f0;
+      font-size: 10px;
+      padding: 4px;
+      text-align: center;
+      z-index: 99;
+      border-top: 1px solid var(--accent);
+    }
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      color: #0f0;
+    }
+    .hidden {
+      display: none;
+    }
+    /* Аски-арт логотип */
+    .ascii-logo {
+      font-family: monospace;
+      white-space: pre;
+      font-size: 10px;
+      line-height: 1.2;
+      color: var(--accent);
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    /* Мобильные улучшения */
+    @media (max-width: 600px) {
+      .container {
+        padding: 12px;
+      }
+      .menu-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        margin: 20px auto;
+      }
+      button {
+        padding: 12px;
+        font-size: 1rem;
+        width: 100%;
+        margin: 4px 0;
+      }
+      .chat-container {
+        flex-direction: column;
+      }
+      .contacts {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #333;
+        display: flex;
+        justify-content: space-around;
+      }
+      .contacts div {
+        text-align: center;
+        flex: 1;
+      }
+      .message {
+        max-width: 90%;
+        font-size: 0.9rem;
+      }
+      .input-area select, .input-area input, .input-area button {
+        width: 100%;
+        margin: 5px 0;
+      }
+      .input-area {
+        display: flex;
+        flex-direction: column;
+      }
+      .input-area select {
+        width: 100%;
+      }
+      .input-area input {
+        width: 100%;
+      }
+      .modal-content {
+        padding: 15px;
+      }
+      .ascii-logo {
+        font-size: 7px;
+        overflow-x: auto;
+      }
+    }
   </style>
 </head>
 <body>
 
 <div class="header">
-  <div><span class="accent">[БИАР]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v3.3</div>
+  <div><span class="accent">[БИАР]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v3.4</div>
   <div><span id="current-time"></span></div>
 </div>
 
@@ -83,13 +323,12 @@
       return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;');
     }
 
-    // Улучшенная showModal: onOpen вызывается сразу после отображения контента, onClose при закрытии
+    // Универсальная модалка
     function showModal(content, onOpen, onClose) {
       const modal = document.getElementById('modal');
       const modalContent = document.getElementById('modal-content');
       modalContent.innerHTML = content + `<br><br><button id="modal-close-btn">ЗАКРЫТЬ</button>`;
       modal.style.display = 'flex';
-      // Вызываем onOpen, если передан, чтобы навесить обработчики на кнопки внутри
       if (onOpen) onOpen();
       document.getElementById('modal-close-btn').onclick = () => {
         modal.style.display = 'none';
@@ -97,9 +336,15 @@
       };
     }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
-    function showFullImage(src) {
-      showModal(`<div style="text-align:center;"><img src="${escapeHtml(src)}" style="max-width:100%; max-height:80vh; border:1px solid var(--accent);"></div>`);
+
+    // Показать увеличенное фото с возможностью вернуться к статье
+    let currentArticleReopenCallback = null;
+    function showFullImage(src, onCloseCallback) {
+      showModal(`<div style="text-align:center;"><img src="${escapeHtml(src)}" style="max-width:100%; max-height:80vh; border:1px solid var(--accent);"></div>`, null, () => {
+        if (onCloseCallback) onCloseCallback();
+      });
     }
+
     function showLoading(callback) {
       const overlay = document.createElement('div');
       overlay.className = 'loading-overlay';
@@ -147,32 +392,68 @@
       showModal(`<h2>ДОСТУП ОТКЛОНЁН</h2><p>Недостаточный уровень доступа.</p>`);
     }
 
+    // === ASCII-ЛОГОТИП ===
+    function getAsciiLogo() {
+      return `
+        <div class="ascii-logo">
++--------------------------------------------------+
+|   ██████╗ ██╗ █████╗ ██████╗                     |
+|   ██╔══██╗██║██╔══██╗██╔══██╗                    |
+|   ██████╔╝██║███████║██████╔╝                    |
+|   ██╔══██╗██║██╔══██║██╔══██╗                    |
+|   ██████╔╝██║██║  ██║██║  ██║                    |
+|   ╚═════╝ ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝                    |
+|   БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ               |
++--------------------------------------------------+
+        </div>
+      `;
+    }
+
     // === ОСНОВНОЙ ИНТЕРФЕЙС ===
     function showHome() {
       const mainContent = document.getElementById('main-content');
+      const isAdmin = currentUser.role === 'admin';
+      // Генерация меню в зависимости от роли
+      let menuButtons = '';
+      if (isAdmin) {
+        menuButtons = `
+          <button id="archive-btn">▸ АРХИВ ДОКУМЕНТОВ</button>
+          <button id="account-btn">▸ АККАУНТ</button>
+          <button id="chat-btn">▸ СВЯЗЬ</button>
+          <button id="logout-btn">▸ ВЫХОД ИЗ СИСТЕМЫ</button>
+          <button id="admin-btn">▸ АДМИН-ПАНЕЛЬ</button>
+        `;
+      } else {
+        menuButtons = `
+          <button id="archive-btn">▸ АРХИВ ДОКУМЕНТОВ</button>
+          <button id="account-btn">▸ АККАУНТ</button>
+          <button id="chat-btn">▸ СВЯЗЬ</button>
+          <button id="record-btn">▸ ЗАПИСЬ</button>
+          <button id="map-btn">▸ КАРТА</button>
+          <button id="contacts-btn">▸ КОНТАКТЫ</button>
+          <button id="logout-btn">▸ ВЫХОД ИЗ СИСТЕМЫ</button>
+        `;
+      }
       mainContent.innerHTML = `
+        ${getAsciiLogo()}
         <h2 style="text-align:center;">ТЕРМИНАЛ БИАР</h2>
-        <p style="text-align:center;">Уровень доступа: ${currentUser.role === 'admin' ? 'M5 — Полный' : 'M2'}</p>
+        <p style="text-align:center;">Уровень доступа: ${isAdmin ? 'M5 — Полный' : 'M2'}</p>
         <div class="menu-grid">
-          <button id="archive-btn">АРХИВ ДОКУМЕНТОВ</button>
-          <button id="account-btn">АККАУНТ</button>
-          <button id="chat-btn">СВЯЗЬ</button>
-          <button id="record-btn">ЗАПИСЬ</button>
-          <button id="map-btn">КАРТА</button>
-          <button id="contacts-btn">КОНТАКТЫ</button>
-          <button id="logout-btn">ВЫХОД ИЗ СИСТЕМЫ</button>
-          ${currentUser.role === 'admin' ? '<button id="admin-btn">АДМИН-ПАНЕЛЬ</button>' : ''}
+          ${menuButtons}
         </div>
         <div class="status-bar" style="margin-top:20px;">🔒 СЕАНС АКТИВЕН</div>
       `;
       document.getElementById('archive-btn').onclick = () => showArchive();
       document.getElementById('account-btn').onclick = () => showAccount();
       document.getElementById('chat-btn').onclick = () => showChat();
-      document.getElementById('record-btn').onclick = () => deniedAccess();
-      document.getElementById('map-btn').onclick = () => deniedAccess();
-      document.getElementById('contacts-btn').onclick = () => deniedAccess();
       document.getElementById('logout-btn').onclick = () => { currentUser = null; document.getElementById('login-section').classList.remove('hidden'); document.getElementById('main-section').classList.add('hidden'); };
-      if (currentUser.role === 'admin') document.getElementById('admin-btn').onclick = () => showAdmin();
+      if (isAdmin) {
+        document.getElementById('admin-btn').onclick = () => showAdmin();
+      } else {
+        document.getElementById('record-btn').onclick = () => deniedAccess();
+        document.getElementById('map-btn').onclick = () => deniedAccess();
+        document.getElementById('contacts-btn').onclick = () => deniedAccess();
+      }
     }
 
     function showAccount() {
@@ -203,24 +484,39 @@
         const code = document.getElementById('search-code').value.trim().toUpperCase();
         const article = articles.find(a => a.code.toUpperCase() === code);
         if (article) {
-          let imgHtml = (article.images || []).map(src => `<img src="${escapeHtml(src)}" style="max-width:100%; margin:10px 0; cursor:pointer;" class="article-img" data-src="${escapeHtml(src)}">`).join('');
-          let adminBtns = currentUser.role === 'admin' ? '<button id="delete-article-btn">Удалить статью</button>' : '';
-          showModal(`
-            <h2>${escapeHtml(article.title)}</h2>
-            <p><strong>Код:</strong> ${escapeHtml(article.code)} | <strong>Дата:</strong> ${escapeHtml(article.date)}</p>
-            <p>${escapeHtml(article.text).replace(/\n/g, '<br>')}</p>
-            ${imgHtml}
-            ${adminBtns}
-          `, () => {
-            // onOpen: навешиваем обработчик удаления
-            if (currentUser.role === 'admin') {
-              const delBtn = document.getElementById('delete-article-btn');
-              if (delBtn) delBtn.onclick = async () => { await deleteArticle(article.id); closeModal(); showArchive(); };
-            }
-            document.querySelectorAll('.article-img').forEach(img => {
-              img.onclick = (e) => showFullImage(e.target.getAttribute('data-src'));
+          // Функция для повторного открытия статьи
+          const reopenArticle = () => {
+            showModalForArticle(article);
+          };
+          const showModalForArticle = (art) => {
+            let imgHtml = (art.images || []).map(src => `<img src="${escapeHtml(src)}" style="max-width:100%; margin:10px 0; cursor:pointer;" class="article-img" data-src="${escapeHtml(src)}">`).join('');
+            let adminBtns = currentUser.role === 'admin' ? '<button id="delete-article-btn">Удалить статью</button>' : '';
+            showModal(`
+              <h2>${escapeHtml(art.title)}</h2>
+              <p><strong>Код:</strong> ${escapeHtml(art.code)}</p>
+              <p>${escapeHtml(art.text).replace(/\n/g, '<br>')}</p>
+              ${imgHtml}
+              ${adminBtns}
+            `, () => {
+              // Обработчики после открытия модалки
+              if (currentUser.role === 'admin') {
+                const delBtn = document.getElementById('delete-article-btn');
+                if (delBtn) delBtn.onclick = async () => { await deleteArticle(art.id); closeModal(); showArchive(); };
+              }
+              // Навешиваем обработчики на картинки: при клике открываем увеличенное фото с возможностью вернуться
+              document.querySelectorAll('.article-img').forEach(img => {
+                img.onclick = (e) => {
+                  e.stopPropagation();
+                  const src = img.getAttribute('data-src');
+                  showFullImage(src, () => {
+                    // После закрытия фото показываем статью заново
+                    showModalForArticle(art);
+                  });
+                };
+              });
             });
-          });
+          };
+          showModalForArticle(article);
         } else showModal("КОД НЕ НАЙДЕН В АРХИВЕ");
       };
     }
@@ -326,7 +622,6 @@
         <input id="new-image2" placeholder="Ссылка на фото 2 (необязательно)"><br>
         <button id="save-new-btn">Сохранить</button>
       `,
-      // onOpen: навешиваем обработчик на кнопку "Сохранить"
       () => {
         const saveBtn = document.getElementById('save-new-btn');
         if (saveBtn) {
@@ -357,7 +652,7 @@
               showAdmin();
             }
           };
-        } else console.error("Кнопка save-new-btn не найдена");
+        }
       });
     }
 
@@ -392,7 +687,7 @@
             closeModal();
             showAdmin();
           };
-        } else console.error("Кнопка save-edit-btn не найдена");
+        }
       });
     }
 
