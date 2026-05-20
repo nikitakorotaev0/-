@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
   <title>БИАР • Бюро Исследований Аномалий России</title>
-  <!-- Supabase JS библиотека -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <style>
@@ -17,7 +16,7 @@
     body {
       background: var(--bg);
       color: var(--gray);
-      font-family: 'Courier New', 'Fira Code', monospace;
+      font-family: 'Courier New', monospace;
       overflow: hidden;
       height: 100vh;
     }
@@ -156,6 +155,13 @@
       z-index: 99;
       border-top: 1px solid var(--accent);
     }
+    .loading-overlay {
+      position: fixed; top:0; left:0; width:100%; height:100%;
+      background: #000; z-index: 9999;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; color: #0f0;
+    }
+    .hidden { display: none; }
     @media (max-width: 600px) {
       .menu-grid { grid-template-columns: 1fr; }
       .chat-container { flex-direction: column; }
@@ -171,406 +177,340 @@
   <div><span id="current-time"></span></div>
 </div>
 
-<div id="app" class="container"></div>
-<div id="modal" class="modal"><div class="modal-content" id="modal-content"></div></div>
-<div id="security-footer" class="security-ticker">СЕТЬ ШИФРУЕТСЯ • УСТАНОВЛЕНИЕ ЗАЩИЩЁННОГО КАНАЛА...</div>
-
-<script>
-// ========== НАСТРОЙКИ SUPABASE (ВАШИ ДАННЫЕ) ==========
-const SUPABASE_URL = "https://xfyppmvvobskdmksqnir.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_MoW2nFpIaGZIQwEsKjQubw_T0ko9O7q";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-// ========== ЛОКАЛЬНЫЕ ПОЛЬЗОВАТЕЛИ (ХЭШИ) ==========
-const users = {
-  "AT2167": { 
-    passwordHash: CryptoJS.SHA256("AAF2615w").toString(), 
-    role: "player", 
-    name: "ANDREY TOCHILIN" 
-  },
-  "Admin": { 
-    passwordHash: CryptoJS.SHA256("kawasaki").toString(), 
-    role: "admin", 
-    name: "ADMINISTRATOR" 
-  }
-};
-
-let currentUser = null;
-
-// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
-function escapeHtml(str) {
-  if (!str) return '';
-  return str.replace(/[&<>]/g, function(m) {
-    if (m === '&') return '&amp;';
-    if (m === '<') return '&lt;';
-    if (m === '>') return '&gt;';
-    return m;
-  });
-}
-
-function showModal(content, onClose) {
-  const modal = document.getElementById('modal');
-  const modalContent = document.getElementById('modal-content');
-  modalContent.innerHTML = content + `<br><br><button id="modal-close-btn">ЗАКРЫТЬ</button>`;
-  modal.style.display = 'flex';
-  document.getElementById('modal-close-btn').onclick = () => {
-    modal.style.display = 'none';
-    if (onClose) onClose();
-  };
-}
-
-function closeModal() { document.getElementById('modal').style.display = 'none'; }
-
-function showFullImage(src) {
-  showModal(`<div style="text-align:center;"><img src="${escapeHtml(src)}" style="max-width:100%; max-height:80vh; border:1px solid var(--accent);"></div>`);
-}
-
-function showLoading(callback) {
-  const overlay = document.createElement('div');
-  overlay.className = 'loading-overlay';
-  overlay.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:9999; display:flex; align-items:center; justify-content:center; color:#0f0; flex-direction:column;';
-  overlay.innerHTML = `
-    <div>ЗАПУСК ПРОТОКОЛА ДОСТУПА...</div>
-    <div style="width:300px; height:20px; border:1px solid #0f0; margin-top:20px;"><div style="width:0%; height:100%; background:#0f0; animation: fillAnim 0.8s ease-out forwards;"></div></div>
-    <div style="margin-top:15px; font-size:10px;">ДЕШИФРОВАНИЕ КЛЮЧЕЙ...</div>
-    <style> @keyframes fillAnim { 0% { width:0%; } 100% { width:100%; } } </style>
-  `;
-  document.body.appendChild(overlay);
-  setTimeout(() => { overlay.remove(); if (callback) callback(); }, 1000);
-}
-
-// ========== РАБОТА С БАЗОЙ ДАННЫХ ==========
-async function fetchArticles() {
-  const { data, error } = await supabase.from('articles').select('*').order('id', { ascending: false });
-  if (error) { console.error(error); return []; }
-  return data;
-}
-async function addArticle(article) {
-  const { error } = await supabase.from('articles').insert(article);
-  if (error) console.error(error);
-}
-async function updateArticle(id, updates) {
-  const { error } = await supabase.from('articles').update(updates).eq('id', id);
-  if (error) console.error(error);
-}
-async function deleteArticle(id) {
-  const { error } = await supabase.from('articles').delete().eq('id', id);
-  if (error) console.error(error);
-}
-async function fetchMessages(contact) {
-  const { data, error } = await supabase.from('messages').select('*').eq('contact', contact).order('id', { ascending: true });
-  if (error) return [];
-  return data;
-}
-async function sendMessageToDB(contact, from, text) {
-  const newMsg = {
-    id: Date.now(),
-    contact: contact,
-    from_sender: from,
-    text: text,
-    time: new Date().toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'})
-  };
-  const { error } = await supabase.from('messages').insert(newMsg);
-  if (error) console.error(error);
-}
-async function deleteMessageFromDB(id) {
-  const { error } = await supabase.from('messages').delete().eq('id', id);
-  if (error) console.error(error);
-}
-
-// ========== СТРАНИЦЫ ==========
-function showLogin() {
-  document.getElementById('app').innerHTML = `
+<div class="container">
+  <!-- Секция входа (всегда в HTML) -->
+  <div id="login-section">
     <div style="text-align:center; margin-top:80px;">
       <h1 class="accent" style="font-size:28px;">БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ</h1>
       <p style="margin:20px 0;">ДОСТУП К АРХИВУ РАЗРЕШЁН ТОЛЬКО АВТОРИЗОВАННЫМ АГЕНТАМ</p>
       <div style="max-width:420px; margin:40px auto;">
         <input type="text" id="login-input" placeholder="Код агента" autocomplete="off"><br>
         <input type="password" id="pass-input" placeholder="Пароль"><br>
-        <button id="login-btn" style="width:100%;">ВХОД В СИСТЕМУ</button>
+        <button id="login-btn">ВХОД В СИСТЕМУ</button>
       </div>
       <div style="font-size:11px; color:#444;">ЗАЩИЩЁННЫЙ ВХОД • ТОЛЬКО ДЛЯ СОТРУДНИКОВ</div>
     </div>
-  `;
-  document.getElementById('login-btn').onclick = () => {
-    const login = document.getElementById('login-input').value.trim();
-    const password = document.getElementById('pass-input').value.trim();
-    const user = users[login];
-    if (user && CryptoJS.SHA256(password).toString() === user.passwordHash) {
-      currentUser = { login: login, role: user.role, name: user.name };
-      if (currentUser.role === 'player') showLoading(() => showHome());
-      else showHome();
-    } else {
-      alert("НЕВЕРНЫЙ КОД АГЕНТА ИЛИ ПАРОЛЬ");
+  </div>
+
+  <!-- Секция основного интерфейса (скрыта по умолчанию) -->
+  <div id="main-section" class="hidden">
+    <div id="main-content"></div>
+  </div>
+</div>
+
+<div id="modal" class="modal"><div class="modal-content" id="modal-content"></div></div>
+<div id="security-footer" class="security-ticker">СЕТЬ ШИФРУЕТСЯ • УСТАНОВЛЕНИЕ ЗАЩИЩЁННОГО КАНАЛА...</div>
+
+<script>
+  (function() {
+    // === SUPABASE ===
+    const SUPABASE_URL = "https://xfyppmvvobskdmksqnir.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_MoW2nFpIaGZIQwEsKjQubw_T0ko9O7q";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // === ПОЛЬЗОВАТЕЛИ ===
+    const users = {
+      "AT2167": { hash: CryptoJS.SHA256("AAF2615w").toString(), role: "player", name: "ANDREY TOCHILIN" },
+      "Admin": { hash: CryptoJS.SHA256("kawasaki").toString(), role: "admin", name: "ADMINISTRATOR" }
+    };
+    let currentUser = null;
+
+    // === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;');
     }
-  };
-}
+    function showModal(content, onClose) {
+      const modal = document.getElementById('modal');
+      const modalContent = document.getElementById('modal-content');
+      modalContent.innerHTML = content + `<br><br><button id="modal-close-btn">ЗАКРЫТЬ</button>`;
+      modal.style.display = 'flex';
+      document.getElementById('modal-close-btn').onclick = () => {
+        modal.style.display = 'none';
+        if (onClose) onClose();
+      };
+    }
+    function closeModal() { document.getElementById('modal').style.display = 'none'; }
+    function showFullImage(src) {
+      showModal(`<div style="text-align:center;"><img src="${escapeHtml(src)}" style="max-width:100%; max-height:80vh; border:1px solid var(--accent);"></div>`);
+    }
+    function showLoading(callback) {
+      const overlay = document.createElement('div');
+      overlay.className = 'loading-overlay';
+      overlay.innerHTML = `
+        <div>ЗАПУСК ПРОТОКОЛА ДОСТУПА...</div>
+        <div style="width:300px; height:20px; border:1px solid #0f0; margin-top:20px;"><div style="width:0%; height:100%; background:#0f0; animation: fillAnim 0.8s ease-out forwards;"></div></div>
+        <div style="margin-top:15px;">ДЕШИФРОВАНИЕ КЛЮЧЕЙ...</div>
+        <style> @keyframes fillAnim { 0% { width:0%; } 100% { width:100%; } } </style>
+      `;
+      document.body.appendChild(overlay);
+      setTimeout(() => { overlay.remove(); callback(); }, 1000);
+    }
 
-function showHome() {
-  const app = document.getElementById('app');
-  app.innerHTML = `
-    <h2 style="text-align:center;">ТЕРМИНАЛ БИАР</h2>
-    <p style="text-align:center;">Уровень доступа: ${currentUser.role === 'admin' ? 'M5 — Полный' : 'M2'}</p>
-    <div class="menu-grid">
-      <button id="archive-btn">АРХИВ ДОКУМЕНТОВ</button>
-      <button id="account-btn">АККАУНТ</button>
-      <button id="chat-btn">СВЯЗЬ</button>
-      <button id="logout-btn">ВЫХОД ИЗ СИСТЕМЫ</button>
-      ${currentUser.role === 'admin' ? '<button id="admin-btn">АДМИН-ПАНЕЛЬ</button>' : ''}
-    </div>
-  `;
-  document.getElementById('archive-btn').onclick = () => showArchive();
-  document.getElementById('account-btn').onclick = () => showAccount();
-  document.getElementById('chat-btn').onclick = () => showChat();
-  document.getElementById('logout-btn').onclick = () => { currentUser = null; showLogin(); };
-  if (currentUser.role === 'admin') document.getElementById('admin-btn').onclick = () => showAdmin();
-}
+    // === РАБОТА С БАЗОЙ ===
+    async function fetchArticles() {
+      const { data, error } = await supabase.from('articles').select('*').order('id', { ascending: false });
+      if (error) { console.error(error); return []; }
+      return data;
+    }
+    async function addArticle(article) { await supabase.from('articles').insert(article); }
+    async function updateArticle(id, updates) { await supabase.from('articles').update(updates).eq('id', id); }
+    async function deleteArticle(id) { await supabase.from('articles').delete().eq('id', id); }
+    async function fetchMessages(contact) {
+      const { data, error } = await supabase.from('messages').select('*').eq('contact', contact).order('id', { ascending: true });
+      if (error) return [];
+      return data;
+    }
+    async function sendMessageToDB(contact, from, text) {
+      await supabase.from('messages').insert({ id: Date.now(), contact, from_sender: from, text, time: '' });
+    }
+    async function deleteMessageFromDB(id) { await supabase.from('messages').delete().eq('id', id); }
 
-function showAccount() {
-  showModal(`
-    <h2>ПРОФИЛЬ АГЕНТА</h2>
-    <div class="profile-photo">
-      <div style="font-size: 32px;">🖼️</div>
-      <span>Фото изъято</span>
-      <span style="font-size: 9px;">по решению комиссии №23-А</span>
-    </div>
-    <p><strong>Имя:</strong> ${escapeHtml(currentUser.name)}</p>
-    <p><strong>Должность:</strong> Агент по устранению аномалий</p>
-    <p><strong>Уровень доступа:</strong> ${currentUser.role === 'admin' ? 'M5 (Администратор)' : 'M2'}</p>
-    <p><strong>Статус:</strong> <span style="color:#ffaa00;">Пропал без вести</span></p>
-    <p><strong>Гриф секретности:</strong> Особой важности</p>
-  `);
-}
+    // === ОСНОВНОЙ ИНТЕРФЕЙС ===
+    function showHome() {
+      const mainContent = document.getElementById('main-content');
+      mainContent.innerHTML = `
+        <h2 style="text-align:center;">ТЕРМИНАЛ БИАР</h2>
+        <p style="text-align:center;">Уровень доступа: ${currentUser.role === 'admin' ? 'M5 — Полный' : 'M2'}</p>
+        <div class="menu-grid">
+          <button id="archive-btn">АРХИВ ДОКУМЕНТОВ</button>
+          <button id="account-btn">АККАУНТ</button>
+          <button id="chat-btn">СВЯЗЬ</button>
+          <button id="logout-btn">ВЫХОД ИЗ СИСТЕМЫ</button>
+          ${currentUser.role === 'admin' ? '<button id="admin-btn">АДМИН-ПАНЕЛЬ</button>' : ''}
+        </div>
+        <div class="status-bar" style="margin-top:20px;">🔒 СЕАНС АКТИВЕН</div>
+      `;
+      document.getElementById('archive-btn').onclick = () => showArchive();
+      document.getElementById('account-btn').onclick = () => showAccount();
+      document.getElementById('chat-btn').onclick = () => showChat();
+      document.getElementById('logout-btn').onclick = () => { currentUser = null; document.getElementById('login-section').classList.remove('hidden'); document.getElementById('main-section').classList.add('hidden'); };
+      if (currentUser.role === 'admin') document.getElementById('admin-btn').onclick = () => showAdmin();
+    }
 
-// АРХИВ
-async function showArchive() {
-  const app = document.getElementById('app');
-  const articles = await fetchArticles();
-  app.innerHTML = `
-    <button id="back-home" class="back-btn">← НАЗАД НА ГЛАВНУЮ</button>
-    <h2>ПОИСК В АРХИВЕ</h2>
-    <input type="text" id="search-code" placeholder="Введите код доступа"><br>
-    <button id="search-btn">НАЧАТЬ ПОИСК</button>
-    ${currentUser.role === 'admin' ? `<br><br><h3>Всего статей: ${articles.length}</h3>` : ''}
-    <div class="status-bar" style="margin-top:20px;">🔒 ДОКУМЕНТЫ ЗАШИФРОВАНЫ • ДОСТУП ПО КОДУ</div>
-  `;
-  document.getElementById('back-home').onclick = () => showHome();
-  document.getElementById('search-btn').onclick = async () => {
-    const code = document.getElementById('search-code').value.trim().toUpperCase();
-    const article = articles.find(a => a.code.toUpperCase() === code);
-    if (article) {
-      let imgHtml = (article.images || []).map(src => `<img src="${escapeHtml(src)}" style="max-width:100%; margin:10px 0; border:1px solid #444; cursor:pointer;" class="article-img" data-src="${escapeHtml(src)}">`).join('');
-      let adminBtns = '';
-      if (currentUser.role === 'admin') {
-        adminBtns = `<button id="delete-article-btn">Удалить статью</button>`;
-      }
+    function showAccount() {
       showModal(`
-        <div>
-          <h2>${escapeHtml(article.title)}</h2>
-          <p><strong>Код:</strong> ${escapeHtml(article.code)} | <strong>Дата:</strong> ${escapeHtml(article.date)}</p>
-          <p>${escapeHtml(article.text).replace(/\n/g, '<br>')}</p>
-          ${imgHtml}
-        </div>
-        ${adminBtns}
-      `, () => {
-        if (currentUser.role === 'admin') {
-          const delBtn = document.getElementById('delete-article-btn');
-          if (delBtn) delBtn.onclick = async () => { await deleteArticle(article.id); closeModal(); showArchive(); };
-        }
-        document.querySelectorAll('.article-img').forEach(img => {
-          img.onclick = (e) => showFullImage(e.target.getAttribute('data-src'));
-        });
-      });
-    } else {
-      showModal("КОД НЕ НАЙДЕН В АРХИВЕ");
+        <h2>ПРОФИЛЬ АГЕНТА</h2>
+        <div class="profile-photo"><div style="font-size:32px;">🖼️</div><span>Фото изъято</span><span style="font-size:9px;">по решению комиссии №23-А</span></div>
+        <p><strong>Имя:</strong> ${escapeHtml(currentUser.name)}</p>
+        <p><strong>Должность:</strong> Агент по устранению аномалий</p>
+        <p><strong>Уровень доступа:</strong> ${currentUser.role === 'admin' ? 'M5 (Администратор)' : 'M2'}</p>
+        <p><strong>Статус:</strong> <span style="color:#ffaa00;">Пропал без вести</span></p>
+        <p><strong>Гриф секретности:</strong> Особой важности</p>
+      `);
     }
-  };
-}
 
-// ЧАТ (без времени)
-let currentChatContact = "ADMIN";
-async function showChat() {
-  const app = document.getElementById('app');
-  app.innerHTML = `
-    <button id="back-home-chat" class="back-btn">← НАЗАД НА ГЛАВНУЮ</button>
-    <h2>ЗАЩИЩЁННЫЙ КАНАЛ СВЯЗИ</h2>
-    <div class="chat-container">
-      <div class="contacts">
-        <div id="contact-admin" style="padding:14px; cursor:pointer; border-bottom:1px solid #333;">ADMIN</div>
-        <div id="contact-si" style="padding:14px; cursor:pointer;">SI4015</div>
-      </div>
-      <div class="chat-area">
-        <div class="messages" id="messages"></div>
-        <div class="input-area" id="input-area" style="${currentUser.role === 'player' ? 'display:none;' : ''}">
-          <select id="sender-select" style="width:30%; display:${currentUser.role==='admin'?'inline-block':'none'}">
-            <option value="ADMIN">От ADMIN</option>
-            <option value="SI4015">От SI4015</option>
-            <option value="ANDREY TOCHILIN">От ANDREY TOCHILIN</option>
-          </select>
-          <input type="text" id="chat-input" placeholder="Сообщение..." style="width:50%;">
-          <button id="send-msg-btn">ОТПРАВИТЬ</button>
+    async function showArchive() {
+      const mainContent = document.getElementById('main-content');
+      const articles = await fetchArticles();
+      mainContent.innerHTML = `
+        <button id="back-home" class="back-btn">← НАЗАД НА ГЛАВНУЮ</button>
+        <h2>ПОИСК В АРХИВЕ</h2>
+        <input type="text" id="search-code" placeholder="Введите код доступа"><br>
+        <button id="search-btn">НАЧАТЬ ПОИСК</button>
+        ${currentUser.role === 'admin' ? `<br><br><h3>Всего статей: ${articles.length}</h3>` : ''}
+        <div class="status-bar" style="margin-top:20px;">🔒 ДОКУМЕНТЫ ЗАШИФРОВАНЫ • ДОСТУП ПО КОДУ</div>
+      `;
+      document.getElementById('back-home').onclick = () => showHome();
+      document.getElementById('search-btn').onclick = async () => {
+        const code = document.getElementById('search-code').value.trim().toUpperCase();
+        const article = articles.find(a => a.code.toUpperCase() === code);
+        if (article) {
+          let imgHtml = (article.images || []).map(src => `<img src="${escapeHtml(src)}" style="max-width:100%; margin:10px 0; cursor:pointer;" class="article-img" data-src="${escapeHtml(src)}">`).join('');
+          let adminBtns = currentUser.role === 'admin' ? '<button id="delete-article-btn">Удалить статью</button>' : '';
+          showModal(`
+            <h2>${escapeHtml(article.title)}</h2>
+            <p><strong>Код:</strong> ${escapeHtml(article.code)} | <strong>Дата:</strong> ${escapeHtml(article.date)}</p>
+            <p>${escapeHtml(article.text).replace(/\n/g, '<br>')}</p>
+            ${imgHtml}
+            ${adminBtns}
+          `, () => {
+            if (currentUser.role === 'admin') {
+              const delBtn = document.getElementById('delete-article-btn');
+              if (delBtn) delBtn.onclick = async () => { await deleteArticle(article.id); closeModal(); showArchive(); };
+            }
+            document.querySelectorAll('.article-img').forEach(img => {
+              img.onclick = (e) => showFullImage(e.target.getAttribute('data-src'));
+            });
+          });
+        } else showModal("КОД НЕ НАЙДЕН В АРХИВЕ");
+      };
+    }
+
+    let currentChatContact = "ADMIN";
+    async function showChat() {
+      const mainContent = document.getElementById('main-content');
+      mainContent.innerHTML = `
+        <button id="back-home-chat" class="back-btn">← НАЗАД НА ГЛАВНУЮ</button>
+        <h2>ЗАЩИЩЁННЫЙ КАНАЛ СВЯЗИ</h2>
+        <div class="chat-container">
+          <div class="contacts">
+            <div id="contact-admin" style="padding:14px; cursor:pointer;">ADMIN</div>
+            <div id="contact-si" style="padding:14px; cursor:pointer;">SI4015</div>
+          </div>
+          <div class="chat-area">
+            <div class="messages" id="messages"></div>
+            <div class="input-area" id="input-area" style="${currentUser.role === 'player' ? 'display:none;' : ''}">
+              <select id="sender-select" style="width:30%; display:${currentUser.role==='admin'?'inline-block':'none'}">
+                <option value="ADMIN">От ADMIN</option>
+                <option value="SI4015">От SI4015</option>
+                <option value="ANDREY TOCHILIN">От ANDREY TOCHILIN</option>
+              </select>
+              <input type="text" id="chat-input" placeholder="Сообщение..." style="width:50%;">
+              <button id="send-msg-btn">ОТПРАВИТЬ</button>
+            </div>
+          </div>
         </div>
-        <div class="status-bar">🔒 Сеть защищённой связи • Уровень шифрования: A-7</div>
-      </div>
-    </div>
-  `;
-  document.getElementById('back-home-chat').onclick = () => showHome();
-  document.getElementById('contact-admin').onclick = () => openChat('ADMIN');
-  document.getElementById('contact-si').onclick = () => openChat('SI4015');
-  if (currentUser.role !== 'player') {
-    document.getElementById('send-msg-btn').onclick = () => sendMessage();
-    document.getElementById('chat-input').addEventListener('keypress', (e) => { if(e.key === 'Enter') sendMessage(); });
-  }
-  await openChat('ADMIN');
-}
+      `;
+      document.getElementById('back-home-chat').onclick = () => showHome();
+      document.getElementById('contact-admin').onclick = () => openChat('ADMIN');
+      document.getElementById('contact-si').onclick = () => openChat('SI4015');
+      if (currentUser.role !== 'player') {
+        document.getElementById('send-msg-btn').onclick = () => sendMessage();
+        document.getElementById('chat-input').addEventListener('keypress', e => { if(e.key === 'Enter') sendMessage(); });
+      }
+      await openChat('ADMIN');
+    }
 
-async function openChat(contact) {
-  currentChatContact = contact;
-  const messagesDiv = document.getElementById('messages');
-  if (!messagesDiv) return;
-  const msgs = await fetchMessages(contact);
-  let html = '';
-  msgs.forEach(msg => {
-    const cls = msg.from_sender === "ADMIN" ? "admin" : msg.from_sender === "SI4015" ? "si" : "player";
-    const deleteBtn = (currentUser.role === 'admin') ? `<button class="delete-msg-btn" data-id="${msg.id}">✕</button>` : '';
-    html += `
-      <div class="message ${cls}">
-        <strong>${escapeHtml(msg.from_sender)}:</strong> ${escapeHtml(msg.text)}
-        ${deleteBtn}
-      </div>`;
-  });
-  messagesDiv.innerHTML = html;
-  if (currentUser.role === 'admin') {
-    document.querySelectorAll('.delete-msg-btn').forEach(btn => {
-      btn.onclick = async (e) => {
-        e.stopPropagation();
-        const msgId = parseInt(btn.getAttribute('data-id'));
-        if (confirm("Удалить сообщение?")) {
-          await deleteMessageFromDB(msgId);
-          await openChat(currentChatContact);
+    async function openChat(contact) {
+      currentChatContact = contact;
+      const messagesDiv = document.getElementById('messages');
+      if (!messagesDiv) return;
+      const msgs = await fetchMessages(contact);
+      let html = '';
+      msgs.forEach(msg => {
+        const cls = msg.from_sender === "ADMIN" ? "admin" : msg.from_sender === "SI4015" ? "si" : "player";
+        const delBtn = currentUser.role === 'admin' ? `<button class="delete-msg-btn" data-id="${msg.id}">✕</button>` : '';
+        html += `<div class="message ${cls}"><strong>${escapeHtml(msg.from_sender)}:</strong> ${escapeHtml(msg.text)} ${delBtn}</div>`;
+      });
+      messagesDiv.innerHTML = html;
+      if (currentUser.role === 'admin') {
+        document.querySelectorAll('.delete-msg-btn').forEach(btn => {
+          btn.onclick = async (e) => {
+            e.stopPropagation();
+            if (confirm("Удалить сообщение?")) {
+              await deleteMessageFromDB(parseInt(btn.getAttribute('data-id')));
+              await openChat(currentChatContact);
+            }
+          };
+        });
+      }
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('chat-input');
+      const text = input.value.trim();
+      if (!text) return;
+      const senderSelect = document.getElementById('sender-select');
+      const sender = senderSelect ? senderSelect.value : (currentUser.role === 'admin' ? 'ADMIN' : currentUser.name);
+      await sendMessageToDB(currentChatContact, sender, text);
+      await openChat(currentChatContact);
+      input.value = '';
+    }
+
+    async function showAdmin() {
+      const mainContent = document.getElementById('main-content');
+      const articles = await fetchArticles();
+      let html = `<button id="back-home-admin" class="back-btn">← НАЗАД НА ГЛАВНУЮ</button><h2>АДМИН-ПАНЕЛЬ</h2><button id="create-article-btn">+ Создать статью</button><br><br>`;
+      articles.forEach(a => {
+        html += `<div style="border:1px solid #444; padding:15px; margin:10px 0;">
+          <strong>${escapeHtml(a.code)}</strong> — ${escapeHtml(a.title)}
+          <button class="edit-article-btn" data-id="${a.id}" style="float:right; margin-left:8px;">Ред</button>
+          <button class="del-article-btn" data-id="${a.id}" style="float:right;">Удалить</button>
+        </div>`;
+      });
+      mainContent.innerHTML = html;
+      document.getElementById('back-home-admin').onclick = () => showHome();
+      document.getElementById('create-article-btn').onclick = () => createArticleForm();
+      document.querySelectorAll('.edit-article-btn').forEach(btn => {
+        btn.onclick = () => editArticle(parseInt(btn.getAttribute('data-id')));
+      });
+      document.querySelectorAll('.del-article-btn').forEach(btn => {
+        btn.onclick = async () => { if(confirm("Удалить?")) { await deleteArticle(parseInt(btn.getAttribute('data-id'))); showAdmin(); } };
+      });
+    }
+
+    function createArticleForm() {
+      showModal(`
+        <h2>Новая статья</h2>
+        <input id="new-code" placeholder="Код"><br>
+        <input id="new-title" placeholder="Заголовок"><br>
+        <textarea id="new-text" rows="7" placeholder="Текст"></textarea><br>
+        <input id="new-image1" placeholder="Ссылка на фото 1"><br>
+        <input id="new-image2" placeholder="Ссылка на фото 2"><br>
+        <button id="save-new-btn">Сохранить</button>
+      `, async () => {
+        document.getElementById('save-new-btn').onclick = async () => {
+          const code = document.getElementById('new-code').value.trim();
+          const title = document.getElementById('new-title').value.trim();
+          const text = document.getElementById('new-text').value.trim();
+          if (!code || !title || !text) { alert("Заполните обязательные поля"); return; }
+          await addArticle({ id: Date.now(), code, title, text, images: [document.getElementById('new-image1').value.trim(), document.getElementById('new-image2').value.trim()].filter(Boolean), date: new Date().toISOString().split('T')[0] });
+          closeModal(); showAdmin();
+        };
+      });
+    }
+
+    async function editArticle(id) {
+      const articles = await fetchArticles();
+      const a = articles.find(x => x.id === id);
+      if (!a) return;
+      showModal(`
+        <h2>Редактирование</h2>
+        <input id="edit-code" value="${escapeHtml(a.code)}"><br>
+        <input id="edit-title" value="${escapeHtml(a.title)}"><br>
+        <textarea id="edit-text" rows="8">${escapeHtml(a.text)}</textarea><br>
+        <input id="edit-image1" value="${escapeHtml(a.images?.[0]||'')}"><br>
+        <input id="edit-image2" value="${escapeHtml(a.images?.[1]||'')}"><br>
+        <button id="save-edit-btn">Сохранить</button>
+      `, async () => {
+        document.getElementById('save-edit-btn').onclick = async () => {
+          await updateArticle(id, {
+            code: document.getElementById('edit-code').value.trim(),
+            title: document.getElementById('edit-title').value.trim(),
+            text: document.getElementById('edit-text').value.trim(),
+            images: [document.getElementById('edit-image1').value.trim(), document.getElementById('edit-image2').value.trim()].filter(Boolean)
+          });
+          closeModal(); showAdmin();
+        };
+      });
+    }
+
+    // === ОБРАБОТЧИК ВХОДА ===
+    document.getElementById('login-btn').onclick = async () => {
+      const login = document.getElementById('login-input').value.trim();
+      const password = document.getElementById('pass-input').value.trim();
+      const user = users[login];
+      if (user && CryptoJS.SHA256(password).toString() === user.hash) {
+        currentUser = { login, role: user.role, name: user.name };
+        if (currentUser.role === 'player') {
+          showLoading(() => {
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('main-section').classList.remove('hidden');
+            showHome();
+          });
+        } else {
+          document.getElementById('login-section').classList.add('hidden');
+          document.getElementById('main-section').classList.remove('hidden');
+          showHome();
         }
-      };
-    });
-  }
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
-}
-
-async function sendMessage() {
-  const input = document.getElementById('chat-input');
-  const text = input.value.trim();
-  if (!text) return;
-  const senderSelect = document.getElementById('sender-select');
-  const sender = senderSelect ? senderSelect.value : (currentUser.role === 'admin' ? 'ADMIN' : currentUser.name);
-  await sendMessageToDB(currentChatContact, sender, text);
-  await openChat(currentChatContact);
-  input.value = '';
-}
-
-// АДМИН-ПАНЕЛЬ
-async function showAdmin() {
-  const app = document.getElementById('app');
-  const articles = await fetchArticles();
-  let html = `
-    <button id="back-home-admin" class="back-btn">← НАЗАД НА ГЛАВНУЮ</button>
-    <h2>АДМИН-ПАНЕЛЬ</h2>
-    <button id="create-article-btn">+ Создать новую статью</button><br><br>
-  `;
-  articles.forEach(a => {
-    html += `<div style="border:1px solid #444; padding:15px; margin:10px 0;">
-      <strong>${escapeHtml(a.code)}</strong> — ${escapeHtml(a.title)}
-      <button class="edit-article-btn" data-id="${a.id}" style="float:right; margin-left:8px;">Редактировать</button>
-      <button class="del-article-btn" data-id="${a.id}" style="float:right;">Удалить</button>
-    </div>`;
-  });
-  app.innerHTML = html;
-  document.getElementById('back-home-admin').onclick = () => showHome();
-  document.getElementById('create-article-btn').onclick = () => createArticleForm();
-  document.querySelectorAll('.edit-article-btn').forEach(btn => {
-    btn.onclick = () => editArticle(parseInt(btn.getAttribute('data-id')));
-  });
-  document.querySelectorAll('.del-article-btn').forEach(btn => {
-    btn.onclick = async () => { if(confirm("Удалить статью?")) { await deleteArticle(parseInt(btn.getAttribute('data-id'))); showAdmin(); } };
-  });
-}
-
-function createArticleForm() {
-  showModal(`
-    <h2>Создание статьи</h2>
-    <input id="new-code" placeholder="Код (например, X-1234)"><br>
-    <input id="new-title" placeholder="Заголовок"><br>
-    <textarea id="new-text" rows="7" placeholder="Текст..."></textarea><br>
-    <input id="new-image1" placeholder="Ссылка на фото 1"><br>
-    <input id="new-image2" placeholder="Ссылка на фото 2"><br>
-    <button id="save-new-btn">Сохранить статью</button>
-  `, async () => {
-    document.getElementById('save-new-btn').onclick = async () => {
-      const code = document.getElementById('new-code').value.trim();
-      const title = document.getElementById('new-title').value.trim();
-      const text = document.getElementById('new-text').value.trim();
-      if (!code || !title || !text) { alert("Заполните обязательные поля"); return; }
-      const newArticle = {
-        id: Date.now(),
-        code: code,
-        title: title,
-        text: text,
-        images: [document.getElementById('new-image1').value.trim(), document.getElementById('new-image2').value.trim()].filter(Boolean),
-        date: new Date().toISOString().split('T')[0]
-      };
-      await addArticle(newArticle);
-      closeModal();
-      showAdmin();
+      } else alert("НЕВЕРНЫЙ КОД АГЕНТА ИЛИ ПАРОЛЬ");
     };
-  });
-}
 
-async function editArticle(id) {
-  const articles = await fetchArticles();
-  const a = articles.find(x => x.id === id);
-  if (!a) return;
-  showModal(`
-    <h2>Редактирование</h2>
-    <input id="edit-code" value="${escapeHtml(a.code)}"><br>
-    <input id="edit-title" value="${escapeHtml(a.title)}"><br>
-    <textarea id="edit-text" rows="8">${escapeHtml(a.text)}</textarea><br>
-    <input id="edit-image1" value="${escapeHtml(a.images?.[0]||'')}"><br>
-    <input id="edit-image2" value="${escapeHtml(a.images?.[1]||'')}"><br>
-    <button id="save-edit-btn">Сохранить изменения</button>
-  `, async () => {
-    document.getElementById('save-edit-btn').onclick = async () => {
-      const updates = {
-        code: document.getElementById('edit-code').value.trim(),
-        title: document.getElementById('edit-title').value.trim(),
-        text: document.getElementById('edit-text').value.trim(),
-        images: [document.getElementById('edit-image1').value.trim(), document.getElementById('edit-image2').value.trim()].filter(Boolean)
-      };
-      await updateArticle(id, updates);
-      closeModal();
-      showAdmin();
-    };
-  });
-}
-
-// БЕГУЩАЯ СТРОКА
-const securityMessages = [
-  "СЕТЬ ШИФРУЕТСЯ • AES-256 • ЗАЩИЩЁННЫЙ СЕРВЕР",
-  "ВНЕШНИЕ КАНАЛЫ ЗАБЛОКИРОВАНЫ • ПРОСЛУШКА НЕВОЗМОЖНА",
-  "КЛЮЧИ ДОСТУПА ОБНОВЛЕНЫ • ВХОД ТОЛЬКО ПО ПРОТОКОЛУ M-5",
-  "ТРАФИК ПРОХОДИТ ЧЕРЕЗ VPN БЮРО • IP НЕ ОПРЕДЕЛЯЕТСЯ",
-  "СИСТЕМА АНТИ-ФИШИНГ АКТИВНА • ОСТАВАЙТЕСЬ В КОНТУРЕ"
-];
-let msgIdx = 0;
-setInterval(() => {
-  const footer = document.getElementById('security-footer');
-  if (footer) footer.textContent = securityMessages[msgIdx % securityMessages.length] + " • " + new Date().toLocaleTimeString();
-  msgIdx++;
-}, 10000);
-
-// ЗАПУСК
-showLogin();
-setInterval(() => {
-  const el = document.getElementById('current-time');
-  if (el) el.textContent = new Date().toLocaleString('ru-RU');
-}, 1000);
+    // === ВРЕМЯ И БЕГУЩАЯ СТРОКА ===
+    setInterval(() => {
+      const el = document.getElementById('current-time');
+      if (el) el.textContent = new Date().toLocaleString('ru-RU');
+    }, 1000);
+    const msgs = ["СЕТЬ ШИФРУЕТСЯ • AES-256", "ВНЕШНИЕ КАНАЛЫ ЗАБЛОКИРОВАНЫ", "КЛЮЧИ ОБНОВЛЕНЫ • ПРОТОКОЛ M-5"];
+    let idx = 0;
+    setInterval(() => {
+      const footer = document.getElementById('security-footer');
+      if (footer) footer.textContent = msgs[idx % msgs.length] + " • " + new Date().toLocaleTimeString();
+      idx++;
+    }, 10000);
+  })();
 </script>
 </body>
 </html>
