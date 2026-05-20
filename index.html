@@ -7,178 +7,45 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <style>
-    :root {
-      --bg: #0a0a0a;
-      --accent: #00cc55;
-      --gray: #bbbbbb;
-    }
+    :root { --bg: #0a0a0a; --accent: #00cc55; --gray: #bbbbbb; }
     * { margin:0; padding:0; box-sizing:border-box; }
-    body {
-      background: var(--bg);
-      color: var(--gray);
-      font-family: 'Courier New', monospace;
-      overflow: hidden;
-      height: 100vh;
-    }
-    .header {
-      background: #0a0a0a;
-      padding: 8px 15px;
-      border-bottom: 1px solid var(--accent);
-      display: flex;
-      justify-content: space-between;
-      flex-wrap: wrap;
-    }
+    body { background: var(--bg); color: var(--gray); font-family: 'Courier New', monospace; overflow: hidden; height: 100vh; }
+    .header { background: #0a0a0a; padding: 8px 15px; border-bottom: 1px solid var(--accent); display: flex; justify-content: space-between; flex-wrap: wrap; }
     .accent { color: var(--accent); text-shadow: 0 0 5px var(--accent); }
-    .container {
-      padding: 20px;
-      height: calc(100vh - 52px);
-      overflow-y: auto;
-    }
-    button {
-      background: transparent;
-      color: var(--accent);
-      border: 1px solid var(--accent);
-      padding: 10px 16px;
-      cursor: pointer;
-      font-family: inherit;
-      margin: 5px;
-      transition: 0.2s;
-    }
+    .container { padding: 20px; height: calc(100vh - 52px); overflow-y: auto; }
+    button { background: transparent; color: var(--accent); border: 1px solid var(--accent); padding: 10px 16px; cursor: pointer; font-family: inherit; margin: 5px; transition: 0.2s; }
     button:hover { background: var(--accent); color: #000; transform: scale(1.02); }
-    input, textarea, select {
-      background: #111;
-      border: 1px solid #444;
-      color: var(--gray);
-      padding: 10px;
-      width: 100%;
-      font-family: inherit;
-      margin: 8px 0;
-    }
-    .modal {
-      position: fixed; top:0; left:0; right:0; bottom:0;
-      background: rgba(0,0,0,0.97);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      padding: 10px;
-    }
-    .modal-content {
-      background: #111;
-      border: 1px solid var(--accent);
-      padding: 25px;
-      max-width: 720px;
-      width: 100%;
-      max-height: 90vh;
-      overflow-y: auto;
-    }
-    .menu-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 12px;
-      max-width: 700px;
-      margin: 40px auto;
-    }
+    input, textarea, select { background: #111; border: 1px solid #444; color: var(--gray); padding: 10px; width: 100%; font-family: inherit; margin: 8px 0; }
+    .modal { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.97); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 10px; }
+    .modal-content { background: #111; border: 1px solid var(--accent); padding: 25px; max-width: 720px; width: 100%; max-height: 90vh; overflow-y: auto; }
+    .menu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; max-width: 700px; margin: 40px auto; }
     .back-btn { margin-bottom: 15px; }
-    .chat-container {
-      display: flex;
-      height: 65vh;
-      border: 1px solid var(--accent);
-    }
-    .contacts {
-      width: 240px;
-      border-right: 1px solid #333;
-      padding: 10px;
-      background: #111;
-    }
+    .chat-container { display: flex; height: 65vh; border: 1px solid var(--accent); }
+    .contacts { width: 240px; border-right: 1px solid #333; padding: 10px; background: #111; }
     .chat-area { flex: 1; display: flex; flex-direction: column; }
-    .messages {
-      flex: 1;
-      padding: 15px;
-      overflow-y: auto;
-      background: #0a0a0a;
-    }
-    .message {
-      margin: 10px 0;
-      padding: 8px 12px;
-      border-radius: 4px;
-      max-width: 75%;
-      word-wrap: break-word;
-    }
+    .messages { flex: 1; padding: 15px; overflow-y: auto; background: #0a0a0a; }
+    .message { margin: 10px 0; padding: 8px 12px; border-radius: 4px; max-width: 75%; word-wrap: break-word; }
     .message.admin { background: #002200; color: #00ff88; border-left: 3px solid #00ff88; }
     .message.si { background: #001122; color: #88ccff; border-left: 3px solid #88ccff; }
     .message.player { background: #221100; color: #ffcc88; margin-left: auto; text-align: right; border-right: 3px solid #ffcc88; }
-    .input-area {
-      padding: 12px;
-      border-top: 1px solid #333;
-      background: #111;
-    }
-    .status-bar {
-      text-align: center;
-      padding: 6px;
-      background: #0a0a0a;
-      font-size: 11px;
-      color: var(--accent);
-      border-top: 1px solid var(--accent);
-    }
-    .delete-msg-btn {
-      background: none;
-      border: none;
-      color: #ff5555;
-      font-size: 12px;
-      margin-left: 10px;
-      cursor: pointer;
-    }
-    .profile-photo {
-      width: 180px;
-      height: 180px;
-      border: 2px solid var(--accent);
-      background: #1a1a1a;
-      margin: 15px auto;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      font-size: 12px;
-    }
-    .security-ticker {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      background: #000000cc;
-      backdrop-filter: blur(4px);
-      color: #0f0;
-      font-size: 10px;
-      padding: 4px;
-      text-align: center;
-      z-index: 99;
-      border-top: 1px solid var(--accent);
-    }
-    .loading-overlay {
-      position: fixed; top:0; left:0; width:100%; height:100%;
-      background: #000; z-index: 9999;
-      display: flex; align-items: center; justify-content: center;
-      flex-direction: column; color: #0f0;
-    }
+    .input-area { padding: 12px; border-top: 1px solid #333; background: #111; }
+    .status-bar { text-align: center; padding: 6px; background: #0a0a0a; font-size: 11px; color: var(--accent); border-top: 1px solid var(--accent); }
+    .delete-msg-btn { background: none; border: none; color: #ff5555; font-size: 12px; margin-left: 10px; cursor: pointer; }
+    .profile-photo { width: 180px; height: 180px; border: 2px solid var(--accent); background: #1a1a1a; margin: 15px auto; display: flex; align-items: center; justify-content: center; flex-direction: column; font-size: 12px; }
+    .security-ticker { position: fixed; bottom: 0; left: 0; width: 100%; background: #000000cc; backdrop-filter: blur(4px); color: #0f0; font-size: 10px; padding: 4px; text-align: center; z-index: 99; border-top: 1px solid var(--accent); }
+    .loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column; color: #0f0; }
     .hidden { display: none; }
-    @media (max-width: 600px) {
-      .menu-grid { grid-template-columns: 1fr; }
-      .chat-container { flex-direction: column; }
-      .contacts { width: 100%; border-right: none; border-bottom: 1px solid #333; }
-      .message { max-width: 90%; }
-    }
+    @media (max-width: 600px) { .menu-grid { grid-template-columns: 1fr; } .chat-container { flex-direction: column; } .contacts { width: 100%; border-right: none; border-bottom: 1px solid #333; } .message { max-width: 90%; } }
   </style>
 </head>
 <body>
 
 <div class="header">
-  <div><span class="accent">[БИАР]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v3.1</div>
+  <div><span class="accent">[БИАР]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v3.3</div>
   <div><span id="current-time"></span></div>
 </div>
 
 <div class="container">
-  <!-- Секция входа (всегда в HTML) -->
   <div id="login-section">
     <div style="text-align:center; margin-top:80px;">
       <h1 class="accent" style="font-size:28px;">БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ</h1>
@@ -191,8 +58,6 @@
       <div style="font-size:11px; color:#444;">ЗАЩИЩЁННЫЙ ВХОД • ТОЛЬКО ДЛЯ СОТРУДНИКОВ</div>
     </div>
   </div>
-
-  <!-- Секция основного интерфейса (скрыта по умолчанию) -->
   <div id="main-section" class="hidden">
     <div id="main-content"></div>
   </div>
@@ -203,28 +68,29 @@
 
 <script>
   (function() {
-    // === SUPABASE ===
     const SUPABASE_URL = "https://xfyppmvvobskdmksqnir.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_MoW2nFpIaGZIQwEsKjQubw_T0ko9O7q";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // === ПОЛЬЗОВАТЕЛИ ===
     const users = {
       "AT2167": { hash: CryptoJS.SHA256("AAF2615w").toString(), role: "player", name: "ANDREY TOCHILIN" },
       "Admin": { hash: CryptoJS.SHA256("kawasaki").toString(), role: "admin", name: "ADMINISTRATOR" }
     };
     let currentUser = null;
 
-    // === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
     function escapeHtml(str) {
       if (!str) return '';
       return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;');
     }
-    function showModal(content, onClose) {
+
+    // Улучшенная showModal: onOpen вызывается сразу после отображения контента, onClose при закрытии
+    function showModal(content, onOpen, onClose) {
       const modal = document.getElementById('modal');
       const modalContent = document.getElementById('modal-content');
       modalContent.innerHTML = content + `<br><br><button id="modal-close-btn">ЗАКРЫТЬ</button>`;
       modal.style.display = 'flex';
+      // Вызываем onOpen, если передан, чтобы навесить обработчики на кнопки внутри
+      if (onOpen) onOpen();
       document.getElementById('modal-close-btn').onclick = () => {
         modal.style.display = 'none';
         if (onClose) onClose();
@@ -237,12 +103,7 @@
     function showLoading(callback) {
       const overlay = document.createElement('div');
       overlay.className = 'loading-overlay';
-      overlay.innerHTML = `
-        <div>ЗАПУСК ПРОТОКОЛА ДОСТУПА...</div>
-        <div style="width:300px; height:20px; border:1px solid #0f0; margin-top:20px;"><div style="width:0%; height:100%; background:#0f0; animation: fillAnim 0.8s ease-out forwards;"></div></div>
-        <div style="margin-top:15px;">ДЕШИФРОВАНИЕ КЛЮЧЕЙ...</div>
-        <style> @keyframes fillAnim { 0% { width:0%; } 100% { width:100%; } } </style>
-      `;
+      overlay.innerHTML = `<div>ЗАПУСК ПРОТОКОЛА ДОСТУПА...</div><div style="width:300px; height:20px; border:1px solid #0f0; margin-top:20px;"><div style="width:0%; height:100%; background:#0f0; animation: fillAnim 0.8s ease-out forwards;"></div></div><div style="margin-top:15px;">ДЕШИФРОВАНИЕ КЛЮЧЕЙ...</div><style> @keyframes fillAnim { 0% { width:0%; } 100% { width:100%; } } </style>`;
       document.body.appendChild(overlay);
       setTimeout(() => { overlay.remove(); callback(); }, 1000);
     }
@@ -254,12 +115,14 @@
       return data;
     }
     async function addArticle(article) {
-      const { error } = await supabase.from('articles').insert(article);
+      console.log("Добавление статьи:", article);
+      const { data, error } = await supabase.from('articles').insert(article).select();
       if (error) {
-        console.error("Ошибка при добавлении статьи:", error);
-        alert("Ошибка сохранения: " + error.message);
+        console.error("Ошибка Supabase:", error);
+        showModal(`<h2>Ошибка сохранения</h2><p>${escapeHtml(error.message)}</p><p>Смотрите консоль (F12).</p>`);
         return false;
       }
+      console.log("Успешно добавлено:", data);
       return true;
     }
     async function updateArticle(id, updates) {
@@ -280,9 +143,8 @@
     }
     async function deleteMessageFromDB(id) { await supabase.from('messages').delete().eq('id', id); }
 
-    // === ЗАГЛУШКА ДЛЯ НЕДОСТУПНЫХ РАЗДЕЛОВ ===
     function deniedAccess() {
-      showModal(`<h2>ДОСТУП ОТКЛОНЁН</h2><p>Недостаточный уровень доступа.</p><p style="font-size:12px;">Ваш аккаунт не авторизован для просмотра этого раздела.</p>`);
+      showModal(`<h2>ДОСТУП ОТКЛОНЁН</h2><p>Недостаточный уровень доступа.</p>`);
     }
 
     // === ОСНОВНОЙ ИНТЕРФЕЙС ===
@@ -350,6 +212,7 @@
             ${imgHtml}
             ${adminBtns}
           `, () => {
+            // onOpen: навешиваем обработчик удаления
             if (currentUser.role === 'admin') {
               const delBtn = document.getElementById('delete-article-btn');
               if (delBtn) delBtn.onclick = async () => { await deleteArticle(article.id); closeModal(); showArchive(); };
@@ -369,10 +232,7 @@
         <button id="back-home-chat" class="back-btn">← НАЗАД НА ГЛАВНУЮ</button>
         <h2>ЗАЩИЩЁННЫЙ КАНАЛ СВЯЗИ</h2>
         <div class="chat-container">
-          <div class="contacts">
-            <div id="contact-admin" style="padding:14px; cursor:pointer;">ADMIN</div>
-            <div id="contact-si" style="padding:14px; cursor:pointer;">SI4015</div>
-          </div>
+          <div class="contacts"><div id="contact-admin" style="padding:14px; cursor:pointer;">ADMIN</div><div id="contact-si" style="padding:14px; cursor:pointer;">SI4015</div></div>
           <div class="chat-area">
             <div class="messages" id="messages"></div>
             <div class="input-area" id="input-area" style="${currentUser.role === 'player' ? 'display:none;' : ''}">
@@ -465,35 +325,39 @@
         <input id="new-image1" placeholder="Ссылка на фото 1 (необязательно)"><br>
         <input id="new-image2" placeholder="Ссылка на фото 2 (необязательно)"><br>
         <button id="save-new-btn">Сохранить</button>
-      `, async () => {
+      `,
+      // onOpen: навешиваем обработчик на кнопку "Сохранить"
+      () => {
         const saveBtn = document.getElementById('save-new-btn');
-        saveBtn.onclick = async () => {
-          const code = document.getElementById('new-code').value.trim();
-          const title = document.getElementById('new-title').value.trim();
-          const text = document.getElementById('new-text').value.trim();
-          if (!code || !title || !text) {
-            alert("Заполните код, заголовок и текст");
-            return;
-          }
-          const images = [];
-          const img1 = document.getElementById('new-image1').value.trim();
-          const img2 = document.getElementById('new-image2').value.trim();
-          if (img1) images.push(img1);
-          if (img2) images.push(img2);
-          const newArticle = {
-            id: Date.now(),
-            code: code,
-            title: title,
-            text: text,
-            images: images,
-            date: new Date().toISOString().split('T')[0]
+        if (saveBtn) {
+          saveBtn.onclick = async () => {
+            const code = document.getElementById('new-code').value.trim();
+            const title = document.getElementById('new-title').value.trim();
+            const text = document.getElementById('new-text').value.trim();
+            if (!code || !title || !text) {
+              alert("Заполните код, заголовок и текст");
+              return;
+            }
+            const images = [];
+            const img1 = document.getElementById('new-image1').value.trim();
+            const img2 = document.getElementById('new-image2').value.trim();
+            if (img1) images.push(img1);
+            if (img2) images.push(img2);
+            const newArticle = {
+              id: Date.now(),
+              code: code,
+              title: title,
+              text: text,
+              images: images,
+              date: new Date().toISOString().split('T')[0]
+            };
+            const success = await addArticle(newArticle);
+            if (success) {
+              closeModal();
+              showAdmin();
+            }
           };
-          const success = await addArticle(newArticle);
-          if (success) {
-            closeModal();
-            showAdmin();
-          }
-        };
+        } else console.error("Кнопка save-new-btn не найдена");
       });
     }
 
@@ -508,27 +372,30 @@
         <textarea id="edit-text" rows="8">${escapeHtml(a.text)}</textarea><br>
         <input id="edit-image1" value="${escapeHtml(a.images?.[0]||'')}" placeholder="Ссылка на фото 1"><br>
         <input id="edit-image2" value="${escapeHtml(a.images?.[1]||'')}" placeholder="Ссылка на фото 2"><br>
-        <button id="save-edit-btn">Сохранить</button>
-      `, async () => {
-        document.getElementById('save-edit-btn').onclick = async () => {
-          const images = [];
-          const img1 = document.getElementById('edit-image1').value.trim();
-          const img2 = document.getElementById('edit-image2').value.trim();
-          if (img1) images.push(img1);
-          if (img2) images.push(img2);
-          await updateArticle(id, {
-            code: document.getElementById('edit-code').value.trim(),
-            title: document.getElementById('edit-title').value.trim(),
-            text: document.getElementById('edit-text').value.trim(),
-            images: images
-          });
-          closeModal();
-          showAdmin();
-        };
+        <button id="save-edit-btn">Сохранить изменения</button>
+      `,
+      () => {
+        const saveBtn = document.getElementById('save-edit-btn');
+        if (saveBtn) {
+          saveBtn.onclick = async () => {
+            const images = [];
+            const img1 = document.getElementById('edit-image1').value.trim();
+            const img2 = document.getElementById('edit-image2').value.trim();
+            if (img1) images.push(img1);
+            if (img2) images.push(img2);
+            await updateArticle(id, {
+              code: document.getElementById('edit-code').value.trim(),
+              title: document.getElementById('edit-title').value.trim(),
+              text: document.getElementById('edit-text').value.trim(),
+              images: images
+            });
+            closeModal();
+            showAdmin();
+          };
+        } else console.error("Кнопка save-edit-btn не найдена");
       });
     }
 
-    // === ОБРАБОТЧИК ВХОДА ===
     document.getElementById('login-btn').onclick = async () => {
       const login = document.getElementById('login-input').value.trim();
       const password = document.getElementById('pass-input').value.trim();
@@ -549,7 +416,6 @@
       } else alert("НЕВЕРНЫЙ КОД АГЕНТА ИЛИ ПАРОЛЬ");
     };
 
-    // === ВРЕМЯ И БЕГУЩАЯ СТРОКА ===
     setInterval(() => {
       const el = document.getElementById('current-time');
       if (el) el.textContent = new Date().toLocaleString('ru-RU');
