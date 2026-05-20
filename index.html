@@ -214,19 +214,19 @@
     }
     /* Центрирование ASCII-арта */
     .ascii-logo {
-      font-family: monospace;
-      white-space: pre;
-      font-size: 10px;
-      line-height: 1.2;
-      color: var(--accent);
       text-align: center;
       margin-bottom: 20px;
     }
     .ascii-logo pre {
       display: inline-block;
       text-align: left;
+      background: transparent;
+      border: 1px solid var(--accent);
+      padding: 10px;
+      font-size: 10px;
+      line-height: 1.2;
+      color: var(--accent);
     }
-    /* Плейсхолдер загрузки картинки */
     .img-placeholder {
       background: #111;
       border: 1px dashed var(--accent);
@@ -236,14 +236,12 @@
       font-size: 12px;
       margin: 10px 0;
     }
-    /* Активный контакт в чате */
     .active-contact {
       background: var(--accent);
       color: #000;
       font-weight: bold;
       text-shadow: none;
     }
-    /* Увеличенное фото без лишних рамок */
     .full-image-modal {
       text-align: center;
     }
@@ -253,7 +251,6 @@
       border: 2px solid var(--accent);
       background: #000;
     }
-    /* Readonly поле для игрока */
     .readonly-field {
       background: #0a0a0a;
       color: #777;
@@ -310,9 +307,9 @@
       .modal-content {
         padding: 15px;
       }
-      .ascii-logo {
+      .ascii-logo pre {
         font-size: 7px;
-        overflow-x: auto;
+        padding: 5px;
       }
     }
   </style>
@@ -320,7 +317,7 @@
 <body>
 
 <div class="header">
-  <div><span class="accent">[БИАР]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v3.6</div>
+  <div><span class="accent">[БИАР]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v3.7</div>
   <div><span id="current-time"></span></div>
 </div>
 
@@ -375,7 +372,6 @@
     }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
 
-    // Увеличенное фото (без лишних рамок, зелёная обводка)
     function showFullImage(src, onCloseCallback) {
       showModal(`<div class="full-image-modal"><img src="${escapeHtml(src)}" style="max-width:100%; max-height:80vh; border:2px solid var(--accent); background:#000;"></div>`, null, () => {
         if (onCloseCallback) onCloseCallback();
@@ -429,19 +425,19 @@
       showModal(`<h2>ДОСТУП ОТКЛОНЁН</h2><p>Недостаточный уровень доступа.</p>`);
     }
 
-    // ASCII-арт логотип с центрированием
+    // ASCII-арт с центрированием внутри рамки
     function getAsciiLogo() {
       return `
         <div class="ascii-logo">
           <pre>
 +--------------------------------------------------+
-|   ██████╗ ██╗ █████╗ ██████╗                     |
-|   ██╔══██╗██║██╔══██╗██╔══██╗                    |
-|   ██████╔╝██║███████║██████╔╝                    |
-|   ██╔══██╗██║██╔══██║██╔══██╗                    |
-|   ██████╔╝██║██║  ██║██║  ██║                    |
-|   ╚═════╝ ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝                    |
-|   БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ               |
+|        ██████╗ ██╗ █████╗ ██████╗               |
+|        ██╔══██╗██║██╔══██╗██╔══██╗              |
+|        ██████╔╝██║███████║██████╔╝              |
+|        ██╔══██╗██║██╔══██║██╔══██╗              |
+|        ██████╔╝██║██║  ██║██║  ██║              |
+|        ╚═════╝ ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝              |
+|   БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ              |
 +--------------------------------------------------+
           </pre>
         </div>
@@ -462,7 +458,6 @@
           <button id="admin-btn">▸ АДМИН-ПАНЕЛЬ</button>
         `;
       } else {
-        // Для игрока: порядок: АРХИВ, АККАУНТ, СВЯЗЬ, ЗАПИСЬ, КАРТА, ВЫХОД, КОНТАКТЫ (выход после карты)
         menuButtons = `
           <button id="archive-btn">▸ АРХИВ ДОКУМЕНТОВ</button>
           <button id="account-btn">▸ АККАУНТ</button>
@@ -523,37 +518,36 @@
         const code = document.getElementById('search-code').value.trim().toUpperCase();
         const article = articles.find(a => a.code.toUpperCase() === code);
         if (article) {
-          const showArticleModal = (art) => {
+          const showArticleModal = async (art) => {
+            // Генерируем HTML с плейсхолдерами для изображений
             let imagesHtml = '';
             if (art.images && art.images.length) {
-              for (let src of art.images) {
-                const imgId = 'img_' + Date.now() + '_' + Math.random();
-                imagesHtml += `
-                  <div id="${imgId}" class="img-placeholder">[ ЗАГРУЗКА ИЗОБРАЖЕНИЯ ... ]</div>
-                  <script>
-                    (function() {
-                      const img = new Image();
-                      img.onload = function() {
-                        const container = document.getElementById('${imgId}');
-                        if (container) {
-                          container.innerHTML = '<img src="${escapeHtml(src)}" style="max-width:100%; margin:10px 0; cursor:pointer;" class="article-img" data-src="${escapeHtml(src)}">';
-                          const newImg = container.querySelector('.article-img');
-                          if (newImg) {
-                            newImg.onclick = (e) => {
-                              e.stopPropagation();
-                              showFullImage(newImg.getAttribute('data-src'), () => showArticleModal(art));
-                            };
-                          }
-                        }
-                      };
-                      img.onerror = function() {
-                        const container = document.getElementById('${imgId}');
-                        if (container) container.innerHTML = '<div style="color:#f00;">[ ОШИБКА ЗАГРУЗКИ ИЗОБРАЖЕНИЯ ]</div>';
-                      };
-                      img.src = "${escapeHtml(src)}";
-                    })();
-                  <\/script>
-                `;
+              for (let i = 0; i < art.images.length; i++) {
+                const src = art.images[i];
+                const placeholderId = `img_${Date.now()}_${i}`;
+                imagesHtml += `<div id="${placeholderId}" class="img-placeholder">[ ЗАГРУЗКА ИЗОБРАЖЕНИЯ ... ]</div>`;
+                // Загружаем изображение асинхронно и позже подменим
+                setTimeout(() => {
+                  const img = new Image();
+                  img.onload = () => {
+                    const container = document.getElementById(placeholderId);
+                    if (container) {
+                      container.innerHTML = `<img src="${escapeHtml(src)}" style="max-width:100%; margin:10px 0; cursor:pointer;" class="article-img" data-src="${escapeHtml(src)}">`;
+                      const newImg = container.querySelector('.article-img');
+                      if (newImg) {
+                        newImg.onclick = (e) => {
+                          e.stopPropagation();
+                          showFullImage(newImg.getAttribute('data-src'), () => showArticleModal(art));
+                        };
+                      }
+                    }
+                  };
+                  img.onerror = () => {
+                    const container = document.getElementById(placeholderId);
+                    if (container) container.innerHTML = '<div style="color:#f00;">[ ОШИБКА ЗАГРУЗКИ ИЗОБРАЖЕНИЯ ]</div>';
+                  };
+                  img.src = src;
+                }, 10);
               }
             }
             let adminBtns = currentUser.role === 'admin' ? '<button id="delete-article-btn">Удалить статью</button>' : '';
@@ -579,7 +573,6 @@
     async function showChat() {
       const mainContent = document.getElementById('main-content');
       const isPlayer = currentUser.role === 'player';
-      // Для игрока имитация поля ввода с сообщением
       const inputAreaHtml = isPlayer ? `
         <div class="input-area">
           <textarea class="readonly-field" rows="2" readonly style="resize:none; background:#0a0a0a; color:#777;">Ответы недоступны в связи с заморозкой аккаунта. Диалоги находятся в режиме архива.</textarea>
@@ -623,7 +616,6 @@
 
     async function openChat(contact) {
       currentChatContact = contact;
-      // Подсветка активного контакта
       const adminDiv = document.getElementById('contact-admin');
       const siDiv = document.getElementById('contact-si');
       if (adminDiv && siDiv) {
