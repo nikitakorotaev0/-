@@ -30,7 +30,6 @@
     }
     .accent { color: var(--accent); text-shadow: 0 0 5px var(--accent); }
     .container { padding: 20px; height: calc(100vh - 52px); overflow-y: auto; }
-
     button {
       background: transparent;
       color: var(--accent);
@@ -42,7 +41,6 @@
       transition: all 0.2s;
     }
     button:hover { background: var(--accent); color: #000; }
-
     input, textarea, select {
       background: #111;
       border: 1px solid #444;
@@ -52,7 +50,6 @@
       font-family: inherit;
       margin: 8px 0;
     }
-
     .modal {
       position: fixed; top:0; left:0; right:0; bottom:0;
       background: rgba(0,0,0,0.97);
@@ -72,7 +69,6 @@
       overflow-y: auto;
       box-shadow: 0 0 20px var(--accent);
     }
-
     .menu-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -80,12 +76,7 @@
       max-width: 700px;
       margin: 40px auto;
     }
-
-    .back-btn {
-      margin-bottom: 15px;
-    }
-
-    /* ЧАТ */
+    .back-btn { margin-bottom: 15px; }
     .chat-container {
       display: flex;
       height: 65vh;
@@ -132,7 +123,6 @@
       color: var(--accent);
       border-top: 1px solid var(--accent);
     }
-
     @media (max-width: 600px) {
       .menu-grid { grid-template-columns: 1fr; }
       button { display: block; width: 100%; margin: 8px 0; }
@@ -143,19 +133,22 @@
 </head>
 <body>
 
-  <div class="header">
-    <div><span class="accent">[БИАР]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v1.1</div>
-    <div id="current-time"></div>
-  </div>
+<div class="header">
+  <div><span class="accent">[БИАР]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v2.1 </div>
+  <div id="current-time"></div>
+</div>
 
-  <div id="app" class="container"></div>
-
-  <div id="modal" class="modal">
-    <div class="modal-content" id="modal-content"></div>
-  </div>
+<div id="app" class="container"></div>
+<div id="modal" class="modal">
+  <div class="modal-content" id="modal-content"></div>
+</div>
 
 <script>
-// ==================== ДАННЫЕ ====================
+// ========== ВСЕ ДАННЫЕ ДЛЯ JSONBin УЖЕ ВСТАВЛЕНЫ ==========
+const JSONBIN_BIN_ID = "6a0d64c16877513b27a080a7";
+const JSONBIN_API_KEY = "$2a$10$GaWoaMS9owKGuYYLNikejexKlq00sPinB.dyK7Wsgv6MTrqLxL9qi";
+// ========================================================
+
 let currentUser = null;
 
 const users = {
@@ -174,18 +167,64 @@ let messagesDB = JSON.parse(localStorage.getItem('biar_messages')) || {
   "SI4015": [{from: "SI4015", text: "Нужна ваша помощь по протоколу P-112.", time: "09:17"}]
 };
 
-function saveData() { localStorage.setItem('biar_articles', JSON.stringify(articles)); }
-function saveMessages() { localStorage.setItem('biar_messages', JSON.stringify(messagesDB)); }
+function saveDataLocal() { localStorage.setItem('biar_articles', JSON.stringify(articles)); }
+function saveMessagesLocal() { localStorage.setItem('biar_messages', JSON.stringify(messagesDB)); }
 
-// ==================== СТРАНИЦЫ ====================
+// ==================== СИНХРОНИЗАЦИЯ С JSONBIN ====================
+async function loadFromCloud() {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+      headers: { 'X-Master-Key': JSONBIN_API_KEY },
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    if (!response.ok) throw new Error('HTTP error');
+    const data = await response.json();
+    if (data.record) {
+      if (data.record.articles && data.record.articles.length) articles = data.record.articles;
+      if (data.record.messagesDB) messagesDB = data.record.messagesDB;
+      saveDataLocal();
+      saveMessagesLocal();
+      return true;
+    }
+    return false;
+  } catch(e) {
+    console.warn('Не удалось загрузить из JSONBin, использую локальные данные', e);
+    return false;
+  }
+}
+
+async function saveToCloud() {
+  try {
+    const payload = { articles: articles, messagesDB: messagesDB };
+    const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': JSONBIN_API_KEY
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!response.ok) throw new Error('HTTP error');
+    const result = await response.json();
+    if (result.message === 'ok') return true;
+    throw new Error('Not ok');
+  } catch(e) {
+    console.warn('Ошибка сохранения в JSONBin', e);
+    return false;
+  }
+}
+
+// ==================== ОСНОВНЫЕ ФУНКЦИИ ====================
 function showPage(page) {
   const app = document.getElementById('app');
-
   if (page === 'login') {
     app.innerHTML = `
       <div style="text-align:center; margin-top:80px;">
         <h1 class="accent" style="font-size:28px; margin-bottom:30px;">БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ</h1>
-        <p class="typing" style="font-size:18px; color:var(--accent); margin:20px 0;">ДОСТУП К АРХИВУ РАЗРЕШЁН ТОЛЬКО АВТОРИЗОВАННЫМ АГЕНТАМ</p>
+        <p style="font-size:18px; color:var(--accent); margin:20px 0;">ДОСТУП К АРХИВУ РАЗРЕШЁН ТОЛЬКО АВТОРИЗОВАННЫМ АГЕНТАМ</p>
         <div style="max-width:420px; margin:40px auto;">
           <input type="text" id="login" placeholder="Код агента" style="margin-bottom:12px;"><br>
           <input type="password" id="pass" placeholder="Пароль" style="margin-bottom:12px;"><br>
@@ -211,10 +250,11 @@ function showPage(page) {
   }
 }
 
-function login() {
+async function login() {
   const l = document.getElementById('login').value.trim();
   const p = document.getElementById('pass').value.trim();
   if (users[l] && users[l].password === p) {
+    await loadFromCloud();
     currentUser = { login: l, ...users[l] };
     showPage('home');
   } else alert("НЕВЕРНЫЙ КОД АГЕНТА ИЛИ ПАРОЛЬ");
@@ -231,7 +271,6 @@ function deniedAccess() {
   showModal(`<h2>ДОСТУП ОТКЛОНЁН</h2><p>Недостаточный уровень доступа.</p>`);
 }
 
-// ==================== АРХИВ ====================
 function showArchive() {
   const app = document.getElementById('app');
   let html = `
@@ -239,17 +278,13 @@ function showArchive() {
     <h2>ПОИСК В АРХИВЕ</h2>
     <input type="text" id="search-code" placeholder="Введите код доступа" style="margin:15px 0;">
     <button onclick="searchArticle()">НАЧАТЬ ПОИСК</button>`;
-
-  if (currentUser.role === 'admin') {
-    html += `<br><br><h3>Всего статей: ${articles.length}</h3>`;
-  }
+  if (currentUser.role === 'admin') html += `<br><br><h3>Всего статей: ${articles.length}</h3>`;
   app.innerHTML = html;
 }
 
 function searchArticle() {
   const code = document.getElementById('search-code').value.trim().toUpperCase();
   const article = articles.find(a => a.code.toUpperCase() === code);
-  
   if (article) {
     let imgHtml = article.images.map(src => `<img src="${src}" style="max-width:100%; margin:10px 0; border:1px solid #444;" onclick="this.style.maxHeight='none'">`).join('');
     showModal(`
@@ -266,7 +301,6 @@ function searchArticle() {
   }
 }
 
-// ==================== ЧАТ ====================
 function showChat() {
   const app = document.getElementById('app');
   app.innerHTML = `
@@ -313,15 +347,16 @@ function openChat(contact) {
   area.scrollTop = area.scrollHeight;
 }
 
-function deleteMessage(contact, index) {
+async function deleteMessage(contact, index) {
   if (confirm("Удалить сообщение?")) {
     messagesDB[contact].splice(index, 1);
-    saveMessages();
+    saveMessagesLocal();
+    await saveToCloud();
     openChat(contact);
   }
 }
 
-function sendMessage() {
+async function sendMessage() {
   const input = document.getElementById('chat-input');
   const text = input.value.trim();
   if (!text) return;
@@ -333,21 +368,18 @@ function sendMessage() {
   }
 
   const sender = document.getElementById('sender-select').value;
-
   if (!messagesDB[currentChatContact]) messagesDB[currentChatContact] = [];
-
   messagesDB[currentChatContact].push({
     from: sender,
     text: text,
     time: new Date().toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'})
   });
-
-  saveMessages();
+  saveMessagesLocal();
+  await saveToCloud();
   openChat(currentChatContact);
   input.value = '';
 }
 
-// ==================== ПРОФИЛЬ И АДМИН ====================
 function showAccount() {
   showModal(`
     <h2>ПРОФИЛЬ АГЕНТА</h2>
@@ -358,7 +390,7 @@ function showAccount() {
   `);
 }
 
-function showAdmin() { /* код админки без изменений */ 
+function showAdmin() {
   let html = `<h2>АДМИН-ПАНЕЛЬ</h2><button onclick="createArticleForm()">+ Создать новую статью</button><br><br>`;
   articles.forEach(a => {
     html += `<div style="border:1px solid #444; padding:15px; margin:10px 0;">
@@ -369,8 +401,6 @@ function showAdmin() { /* код админки без изменений */
   });
   document.getElementById('app').innerHTML = html;
 }
-
-// (Остальные функции админки: createArticleForm, saveNewArticle, editArticle, saveEditedArticle, deleteArticle — остались прежними)
 
 function createArticleForm() {
   showModal(`
@@ -384,19 +414,19 @@ function createArticleForm() {
   `);
 }
 
-function saveNewArticle() {
+async function saveNewArticle() {
   const code = document.getElementById('new-code').value.trim();
   const title = document.getElementById('new-title').value.trim();
   const text = document.getElementById('new-text').value.trim();
   if (!code || !title || !text) return alert("Заполните обязательные поля");
-
   articles.push({
     id: Date.now(),
     code, title, text,
     images: [document.getElementById('new-image1').value.trim(), document.getElementById('new-image2').value.trim()].filter(Boolean),
     date: new Date().toISOString().split('T')[0]
   });
-  saveData();
+  saveDataLocal();
+  await saveToCloud();
   closeModal();
   showAdmin();
 }
@@ -415,7 +445,7 @@ function editArticle(id) {
   `);
 }
 
-function saveEditedArticle(id) {
+async function saveEditedArticle(id) {
   const a = articles.find(x => x.id === id);
   if (!a) return;
   a.code = document.getElementById('edit-code').value.trim();
@@ -425,15 +455,17 @@ function saveEditedArticle(id) {
     document.getElementById('edit-image1').value.trim(),
     document.getElementById('edit-image2').value.trim()
   ].filter(Boolean);
-  saveData();
+  saveDataLocal();
+  await saveToCloud();
   closeModal();
   showAdmin();
 }
 
-function deleteArticle(id) {
+async function deleteArticle(id) {
   if (confirm("Удалить статью?")) {
     articles = articles.filter(a => a.id !== id);
-    saveData();
+    saveDataLocal();
+    await saveToCloud();
     showAdmin();
   }
 }
@@ -447,11 +479,10 @@ function closeModal() {
   document.getElementById('modal').style.display = 'none';
 }
 
-// ==================== ЗАПУСК ====================
 showPage('login');
-
 setInterval(() => {
-  document.getElementById('current-time').textContent = new Date().toLocaleString('ru-RU');
+  const timeEl = document.getElementById('current-time');
+  if (timeEl) timeEl.textContent = new Date().toLocaleString('ru-RU');
 }, 1000);
 </script>
 </body>
