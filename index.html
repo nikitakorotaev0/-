@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Р‘РРђР  вЂў Р‘СЋСЂРѕ РСЃСЃР»РµРґРѕРІР°РЅРёР№ РђРЅРѕРјР°Р»РёР№ Р РѕСЃСЃРёРё</title>
+  <title>БИАР • Бюро Исследований Аномалий России</title>
   <style>
     :root {
       --bg: #0a0a0a;
@@ -85,7 +85,7 @@
       margin-bottom: 15px;
     }
 
-    /* Р§РђРў */
+    /* ЧАТ */
     .chat-container {
       display: flex;
       height: 65vh;
@@ -144,7 +144,7 @@
 <body>
 
   <div class="header">
-    <div><span class="accent">[Р‘РРђР ]</span> Р‘Р®Р Рћ РРЎРЎР›Р•Р”РћР’РђРќРР™ РђРќРћРњРђР›РР™ Р РћРЎРЎРР вЂ” v1.1</div>
+    <div><span class="accent">[БИАР]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v1.1</div>
     <div id="current-time"></div>
   </div>
 
@@ -155,7 +155,7 @@
   </div>
 
 <script>
-// ==================== Р”РђРќРќР«Р• ====================
+// ==================== ДАННЫЕ ====================
 let currentUser = null;
 
 const users = {
@@ -164,48 +164,48 @@ const users = {
 };
 
 let articles = JSON.parse(localStorage.getItem('biar_articles')) || [
-  {id:1, code:"K-7734", title:"РћР±СЉРµРєС‚ в„– K-7734 В«Р§С‘СЂРЅС‹Р№ Р»РµСЃВ»", text:"РђРЅРѕРјР°Р»СЊРЅР°СЏ Р·РѕРЅР° РІ РўРІРµСЂСЃРєРѕР№ РѕР±Р»Р°СЃС‚Рё...", images:["https://picsum.photos/800/400?random=1"], date:"2025-03-12"},
-  {id:2, code:"S-019", title:"РЎСѓР±СЉРµРєС‚ S-019 В«РЁРµРїС‡СѓС‰РёР№В»", text:"РџСЂРѕСЏРІР»СЏРµС‚СЃСЏ С‚РѕР»СЊРєРѕ РІ Р°СѓРґРёРѕР·Р°РїРёСЃСЏС…...", images:[], date:"2026-01-08"},
-  {id:3, code:"R-5541", title:"РђСЂС‚РµС„Р°РєС‚ R-5541 В«Р—РµСЂРєР°Р»РѕВ»", text:"РћС‚СЂР°Р¶Р°РµС‚ РЅРµ С‚РѕРіРѕ, РєС‚Рѕ СЃРјРѕС‚СЂРёС‚...", images:["https://picsum.photos/800/400?random=2"], date:"2025-11-20"}
+  {id:1, code:"K-7734", title:"Объект № K-7734 «Чёрный лес»", text:"Аномальная зона в Тверской области...", images:["https://picsum.photos/800/400?random=1"], date:"2025-03-12"},
+  {id:2, code:"S-019", title:"Субъект S-019 «Шепчущий»", text:"Проявляется только в аудиозаписях...", images:[], date:"2026-01-08"},
+  {id:3, code:"R-5541", title:"Артефакт R-5541 «Зеркало»", text:"Отражает не того, кто смотрит...", images:["https://picsum.photos/800/400?random=2"], date:"2025-11-20"}
 ];
 
 let messagesDB = JSON.parse(localStorage.getItem('biar_messages')) || {
-  "ADMIN": [{from: "ADMIN", text: "РђРіРµРЅС‚ Tochilin, РІС‹ РЅР° СЃРІСЏР·Рё?", time: "14:32"}],
-  "SI4015": [{from: "SI4015", text: "РќСѓР¶РЅР° РІР°С€Р° РїРѕРјРѕС‰СЊ РїРѕ РїСЂРѕС‚РѕРєРѕР»Сѓ P-112.", time: "09:17"}]
+  "ADMIN": [{from: "ADMIN", text: "Агент Tochilin, вы на связи?", time: "14:32"}],
+  "SI4015": [{from: "SI4015", text: "Нужна ваша помощь по протоколу P-112.", time: "09:17"}]
 };
 
 function saveData() { localStorage.setItem('biar_articles', JSON.stringify(articles)); }
 function saveMessages() { localStorage.setItem('biar_messages', JSON.stringify(messagesDB)); }
 
-// ==================== РЎРўР РђРќРР¦Р« ====================
+// ==================== СТРАНИЦЫ ====================
 function showPage(page) {
   const app = document.getElementById('app');
 
   if (page === 'login') {
     app.innerHTML = `
       <div style="text-align:center; margin-top:80px;">
-        <h1 class="accent" style="font-size:28px; margin-bottom:30px;">Р‘Р®Р Рћ РРЎРЎР›Р•Р”РћР’РђРќРР™ РђРќРћРњРђР›РР™ Р РћРЎРЎРР</h1>
-        <p class="typing" style="font-size:18px; color:var(--accent); margin:20px 0;">Р”РћРЎРўРЈРџ Рљ РђР РҐРР’РЈ Р РђР—Р Р•РЁРЃРќ РўРћР›Р¬РљРћ РђР’РўРћР РР—РћР’РђРќРќР«Рњ РђР“Р•РќРўРђРњ</p>
+        <h1 class="accent" style="font-size:28px; margin-bottom:30px;">БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ</h1>
+        <p class="typing" style="font-size:18px; color:var(--accent); margin:20px 0;">ДОСТУП К АРХИВУ РАЗРЕШЁН ТОЛЬКО АВТОРИЗОВАННЫМ АГЕНТАМ</p>
         <div style="max-width:420px; margin:40px auto;">
-          <input type="text" id="login" placeholder="РљРѕРґ Р°РіРµРЅС‚Р°" style="margin-bottom:12px;"><br>
-          <input type="password" id="pass" placeholder="РџР°СЂРѕР»СЊ" style="margin-bottom:12px;"><br>
-          <button onclick="login()" style="width:100%; padding:14px;">Р’РҐРћР” Р’ РЎРРЎРўР•РњРЈ</button>
+          <input type="text" id="login" placeholder="Код агента" style="margin-bottom:12px;"><br>
+          <input type="password" id="pass" placeholder="Пароль" style="margin-bottom:12px;"><br>
+          <button onclick="login()" style="width:100%; padding:14px;">ВХОД В СИСТЕМУ</button>
         </div>
       </div>
     `;
   } else if (page === 'home') {
     app.innerHTML = `
-      <h2 style="text-align:center;">Р”РћР‘Р Рћ РџРћР–РђР›РћР’РђРўР¬, РђР“Р•РќРў <span class="accent">${currentUser.name}</span></h2>
-      <p style="text-align:center;">РЈСЂРѕРІРµРЅСЊ РґРѕСЃС‚СѓРїР°: ${currentUser.role === 'admin' ? 'M5 вЂ” РџРѕР»РЅС‹Р№' : 'M2'}</p>
+      <h2 style="text-align:center;">ДОБРО ПОЖАЛОВАТЬ, АГЕНТ <span class="accent">${currentUser.name}</span></h2>
+      <p style="text-align:center;">Уровень доступа: ${currentUser.role === 'admin' ? 'M5 — Полный' : 'M2'}</p>
       <div class="menu-grid">
-        <button onclick="showArchive()">РђР РҐРР’ Р”РћРљРЈРњР•РќРўРћР’</button>
-        <button onclick="showAccount()">РђРљРљРђРЈРќРў</button>
-        <button onclick="showChat()">РЎР’РЇР—Р¬</button>
-        <button onclick="deniedAccess()">Р—РђРџРРЎР¬</button>
-        <button onclick="deniedAccess()">РљРђР РўРђ</button>
-        <button onclick="deniedAccess()">РљРћРќРўРђРљРўР«</button>
-        ${currentUser.role === 'admin' ? `<button onclick="showAdmin()">РђР”РњРРќ-РџРђРќР•Р›Р¬</button>` : ''}
-        <button onclick="logout()">Р’Р«РҐРћР” РР— РЎРРЎРўР•РњР«</button>
+        <button onclick="showArchive()">АРХИВ ДОКУМЕНТОВ</button>
+        <button onclick="showAccount()">АККАУНТ</button>
+        <button onclick="showChat()">СВЯЗЬ</button>
+        <button onclick="deniedAccess()">ЗАПИСЬ</button>
+        <button onclick="deniedAccess()">КАРТА</button>
+        <button onclick="deniedAccess()">КОНТАКТЫ</button>
+        ${currentUser.role === 'admin' ? `<button onclick="showAdmin()">АДМИН-ПАНЕЛЬ</button>` : ''}
+        <button onclick="logout()">ВЫХОД ИЗ СИСТЕМЫ</button>
       </div>
     `;
   }
@@ -217,31 +217,31 @@ function login() {
   if (users[l] && users[l].password === p) {
     currentUser = { login: l, ...users[l] };
     showPage('home');
-  } else alert("РќР•Р’Р•Р РќР«Р™ РљРћР” РђР“Р•РќРўРђ РР›Р РџРђР РћР›Р¬");
+  } else alert("НЕВЕРНЫЙ КОД АГЕНТА ИЛИ ПАРОЛЬ");
 }
 
 function logout() {
-  if (confirm("Р’С‹Р№С‚Рё РёР· СЃРёСЃС‚РµРјС‹?")) {
+  if (confirm("Выйти из системы?")) {
     currentUser = null;
     showPage('login');
   }
 }
 
 function deniedAccess() {
-  showModal(`<h2>Р”РћРЎРўРЈРџ РћРўРљР›РћРќРЃРќ</h2><p>РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅС‹Р№ СѓСЂРѕРІРµРЅСЊ РґРѕСЃС‚СѓРїР°.</p>`);
+  showModal(`<h2>ДОСТУП ОТКЛОНЁН</h2><p>Недостаточный уровень доступа.</p>`);
 }
 
-// ==================== РђР РҐРР’ ====================
+// ==================== АРХИВ ====================
 function showArchive() {
   const app = document.getElementById('app');
   let html = `
-    <button class="back-btn" onclick="showPage('home')">в†ђ РќРђР—РђР” РќРђ Р“Р›РђР’РќРЈР®</button>
-    <h2>РџРћРРЎРљ Р’ РђР РҐРР’Р•</h2>
-    <input type="text" id="search-code" placeholder="Р’РІРµРґРёС‚Рµ РєРѕРґ РґРѕСЃС‚СѓРїР°" style="margin:15px 0;">
-    <button onclick="searchArticle()">РќРђР§РђРўР¬ РџРћРРЎРљ</button>`;
+    <button class="back-btn" onclick="showPage('home')">← НАЗАД НА ГЛАВНУЮ</button>
+    <h2>ПОИСК В АРХИВЕ</h2>
+    <input type="text" id="search-code" placeholder="Введите код доступа" style="margin:15px 0;">
+    <button onclick="searchArticle()">НАЧАТЬ ПОИСК</button>`;
 
   if (currentUser.role === 'admin') {
-    html += `<br><br><h3>Р’СЃРµРіРѕ СЃС‚Р°С‚РµР№: ${articles.length}</h3>`;
+    html += `<br><br><h3>Всего статей: ${articles.length}</h3>`;
   }
   app.innerHTML = html;
 }
@@ -255,40 +255,40 @@ function searchArticle() {
     showModal(`
       <div class="article">
         <h2>${article.title}</h2>
-        <p><strong>РљРѕРґ:</strong> ${article.code} | <strong>Р”Р°С‚Р°:</strong> ${article.date}</p>
+        <p><strong>Код:</strong> ${article.code} | <strong>Дата:</strong> ${article.date}</p>
         <p>${article.text}</p>
         ${imgHtml}
       </div>
-      ${currentUser.role === 'admin' ? `<button onclick="deleteArticle(${article.id});closeModal()">РЈРґР°Р»РёС‚СЊ СЃС‚Р°С‚СЊСЋ</button>` : ''}
+      ${currentUser.role === 'admin' ? `<button onclick="deleteArticle(${article.id});closeModal()">Удалить статью</button>` : ''}
     `);
   } else {
-    showModal("РљРћР” РќР• РќРђР™Р”Р•Рќ Р’ РђР РҐРР’Р•");
+    showModal("КОД НЕ НАЙДЕН В АРХИВЕ");
   }
 }
 
-// ==================== Р§РђРў ====================
+// ==================== ЧАТ ====================
 function showChat() {
   const app = document.getElementById('app');
   app.innerHTML = `
-    <button class="back-btn" onclick="showPage('home')">в†ђ РќРђР—РђР” РќРђ Р“Р›РђР’РќРЈР®</button>
-    <h2>Р—РђР©РР©РЃРќРќР«Р™ РљРђРќРђР› РЎР’РЇР—Р</h2>
+    <button class="back-btn" onclick="showPage('home')">← НАЗАД НА ГЛАВНУЮ</button>
+    <h2>ЗАЩИЩЁННЫЙ КАНАЛ СВЯЗИ</h2>
     <div class="chat-container">
       <div class="contacts">
-        <div onclick="openChat('ADMIN')" style="padding:14px; cursor:pointer; border-bottom:1px solid #333;">ADMIN (Р СѓРєРѕРІРѕРґСЃС‚РІРѕ)</div>
-        <div onclick="openChat('SI4015')" style="padding:14px; cursor:pointer;">SI4015 (РџРѕР»РµРІРѕР№ Р°РіРµРЅС‚)</div>
+        <div onclick="openChat('ADMIN')" style="padding:14px; cursor:pointer; border-bottom:1px solid #333;">ADMIN (Руководство)</div>
+        <div onclick="openChat('SI4015')" style="padding:14px; cursor:pointer;">SI4015 (Полевой агент)</div>
       </div>
       <div class="chat-area">
         <div class="messages" id="messages"></div>
         <div class="input-area">
           <select id="sender-select" style="width:30%; display:${currentUser.role==='admin'?'inline-block':'none'}">
-            <option value="ADMIN">РћС‚ ADMIN</option>
-            <option value="SI4015">РћС‚ SI4015</option>
-            <option value="ANDREY TOCHILIN">РћС‚ ANDREY TOCHILIN</option>
+            <option value="ADMIN">От ADMIN</option>
+            <option value="SI4015">От SI4015</option>
+            <option value="ANDREY TOCHILIN">От ANDREY TOCHILIN</option>
           </select>
-          <input type="text" id="chat-input" placeholder="РЎРѕРѕР±С‰РµРЅРёРµ..." style="width:50%;">
-          <button onclick="sendMessage()">РћРўРџР РђР’РРўР¬</button>
+          <input type="text" id="chat-input" placeholder="Сообщение..." style="width:50%;">
+          <button onclick="sendMessage()">ОТПРАВИТЬ</button>
         </div>
-        <div class="status-bar">РЎРµС‚СЊ Р·Р°С‰РёС‰С‘РЅРЅРѕР№ СЃРІСЏР·Рё вЂў РЈСЂРѕРІРµРЅСЊ С€РёС„СЂРѕРІР°РЅРёСЏ: A-7</div>
+        <div class="status-bar">Сеть защищённой связи • Уровень шифрования: A-7</div>
       </div>
     </div>
   `;
@@ -306,7 +306,7 @@ function openChat(contact) {
     html += `
       <div class="message ${cls}">
         <strong>${m.from}:</strong> ${m.text} <small>(${m.time})</small>
-        ${currentUser.role === 'admin' ? `<button onclick="deleteMessage('${contact}', ${index})" style="font-size:10px; padding:2px 6px; float:right;">вњ•</button>` : ''}
+        ${currentUser.role === 'admin' ? `<button onclick="deleteMessage('${contact}', ${index})" style="font-size:10px; padding:2px 6px; float:right;">✕</button>` : ''}
       </div>`;
   });
   area.innerHTML = html;
@@ -314,7 +314,7 @@ function openChat(contact) {
 }
 
 function deleteMessage(contact, index) {
-  if (confirm("РЈРґР°Р»РёС‚СЊ СЃРѕРѕР±С‰РµРЅРёРµ?")) {
+  if (confirm("Удалить сообщение?")) {
     messagesDB[contact].splice(index, 1);
     saveMessages();
     openChat(contact);
@@ -327,7 +327,7 @@ function sendMessage() {
   if (!text) return;
 
   if (currentUser.role === 'player') {
-    showModal(`<h2>РЎР’РЇР—Р¬ РћРўРљР›Р®Р§Р•РќРђ</h2><p>РЎРІСЏР·СЊ РѕС‚РєР»СЋС‡РµРЅР° РІ СЃРІСЏР·Рё СЃ РїСЂРѕРїР°Р¶РµР№ Р°РіРµРЅС‚Р°.</p>`);
+    showModal(`<h2>СВЯЗЬ ОТКЛЮЧЕНА</h2><p>Связь отключена в связи с пропажей агента.</p>`);
     input.value = '';
     return;
   }
@@ -347,40 +347,40 @@ function sendMessage() {
   input.value = '';
 }
 
-// ==================== РџР РћР¤РР›Р¬ Р РђР”РњРРќ ====================
+// ==================== ПРОФИЛЬ И АДМИН ====================
 function showAccount() {
   showModal(`
-    <h2>РџР РћР¤РР›Р¬ РђР“Р•РќРўРђ</h2>
-    <p><strong>РРјСЏ:</strong> ${currentUser.name}</p>
-    <p><strong>Р”РѕР»Р¶РЅРѕСЃС‚СЊ:</strong> РђРіРµРЅС‚ РїРѕ СѓСЃС‚СЂР°РЅРµРЅРёСЋ Р°РЅРѕРјР°Р»РёР№</p>
-    <p><strong>РЈСЂРѕРІРµРЅСЊ РґРѕСЃС‚СѓРїР°:</strong> ${currentUser.role === 'admin' ? 'M5 (РђРґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂ)' : 'M2'}</p>
-    <p><strong>РЎС‚Р°С‚СѓСЃ:</strong> РџСЂРѕРїР°Р» Р±РµР· РІРµСЃС‚Рё</p>
+    <h2>ПРОФИЛЬ АГЕНТА</h2>
+    <p><strong>Имя:</strong> ${currentUser.name}</p>
+    <p><strong>Должность:</strong> Агент по устранению аномалий</p>
+    <p><strong>Уровень доступа:</strong> ${currentUser.role === 'admin' ? 'M5 (Администратор)' : 'M2'}</p>
+    <p><strong>Статус:</strong> Пропал без вести</p>
   `);
 }
 
-function showAdmin() { /* РєРѕРґ Р°РґРјРёРЅРєРё Р±РµР· РёР·РјРµРЅРµРЅРёР№ */ 
-  let html = `<h2>РђР”РњРРќ-РџРђРќР•Р›Р¬</h2><button onclick="createArticleForm()">+ РЎРѕР·РґР°С‚СЊ РЅРѕРІСѓСЋ СЃС‚Р°С‚СЊСЋ</button><br><br>`;
+function showAdmin() { /* код админки без изменений */ 
+  let html = `<h2>АДМИН-ПАНЕЛЬ</h2><button onclick="createArticleForm()">+ Создать новую статью</button><br><br>`;
   articles.forEach(a => {
     html += `<div style="border:1px solid #444; padding:15px; margin:10px 0;">
-      <strong>${a.code}</strong> вЂ” ${a.title}
-      <button onclick="editArticle(${a.id})" style="float:right; margin-left:8px;">Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ</button>
-      <button onclick="deleteArticle(${a.id})" style="float:right;">РЈРґР°Р»РёС‚СЊ</button>
+      <strong>${a.code}</strong> — ${a.title}
+      <button onclick="editArticle(${a.id})" style="float:right; margin-left:8px;">Редактировать</button>
+      <button onclick="deleteArticle(${a.id})" style="float:right;">Удалить</button>
     </div>`;
   });
   document.getElementById('app').innerHTML = html;
 }
 
-// (РћСЃС‚Р°Р»СЊРЅС‹Рµ С„СѓРЅРєС†РёРё Р°РґРјРёРЅРєРё: createArticleForm, saveNewArticle, editArticle, saveEditedArticle, deleteArticle вЂ” РѕСЃС‚Р°Р»РёСЃСЊ РїСЂРµР¶РЅРёРјРё)
+// (Остальные функции админки: createArticleForm, saveNewArticle, editArticle, saveEditedArticle, deleteArticle — остались прежними)
 
 function createArticleForm() {
   showModal(`
-    <h2>РЎРѕР·РґР°РЅРёРµ СЃС‚Р°С‚СЊРё</h2>
-    <input id="new-code" placeholder="РљРѕРґ"><br>
-    <input id="new-title" placeholder="Р—Р°РіРѕР»РѕРІРѕРє"><br>
-    <textarea id="new-text" rows="7" placeholder="РўРµРєСЃС‚..."></textarea><br>
-    <input id="new-image1" placeholder="РЎСЃС‹Р»РєР° РЅР° С„РѕС‚Рѕ 1"><br>
-    <input id="new-image2" placeholder="РЎСЃС‹Р»РєР° РЅР° С„РѕС‚Рѕ 2"><br>
-    <button onclick="saveNewArticle()">РЎРѕС…СЂР°РЅРёС‚СЊ СЃС‚Р°С‚СЊСЋ</button>
+    <h2>Создание статьи</h2>
+    <input id="new-code" placeholder="Код"><br>
+    <input id="new-title" placeholder="Заголовок"><br>
+    <textarea id="new-text" rows="7" placeholder="Текст..."></textarea><br>
+    <input id="new-image1" placeholder="Ссылка на фото 1"><br>
+    <input id="new-image2" placeholder="Ссылка на фото 2"><br>
+    <button onclick="saveNewArticle()">Сохранить статью</button>
   `);
 }
 
@@ -388,7 +388,7 @@ function saveNewArticle() {
   const code = document.getElementById('new-code').value.trim();
   const title = document.getElementById('new-title').value.trim();
   const text = document.getElementById('new-text').value.trim();
-  if (!code || !title || !text) return alert("Р—Р°РїРѕР»РЅРёС‚Рµ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹Рµ РїРѕР»СЏ");
+  if (!code || !title || !text) return alert("Заполните обязательные поля");
 
   articles.push({
     id: Date.now(),
@@ -405,13 +405,13 @@ function editArticle(id) {
   const a = articles.find(x => x.id === id);
   if (!a) return;
   showModal(`
-    <h2>Р РµРґР°РєС‚РёСЂРѕРІР°РЅРёРµ</h2>
+    <h2>Редактирование</h2>
     <input id="edit-code" value="${a.code}"><br>
     <input id="edit-title" value="${a.title}"><br>
     <textarea id="edit-text" rows="8">${a.text}</textarea><br>
     <input id="edit-image1" value="${a.images[0]||''}"><br>
     <input id="edit-image2" value="${a.images[1]||''}"><br>
-    <button onclick="saveEditedArticle(${id})">РЎРѕС…СЂР°РЅРёС‚СЊ РёР·РјРµРЅРµРЅРёСЏ</button>
+    <button onclick="saveEditedArticle(${id})">Сохранить изменения</button>
   `);
 }
 
@@ -431,7 +431,7 @@ function saveEditedArticle(id) {
 }
 
 function deleteArticle(id) {
-  if (confirm("РЈРґР°Р»РёС‚СЊ СЃС‚Р°С‚СЊСЋ?")) {
+  if (confirm("Удалить статью?")) {
     articles = articles.filter(a => a.id !== id);
     saveData();
     showAdmin();
@@ -439,7 +439,7 @@ function deleteArticle(id) {
 }
 
 function showModal(content) {
-  document.getElementById('modal-content').innerHTML = content + `<br><br><button onclick="closeModal()">Р—РђРљР Р«РўР¬</button>`;
+  document.getElementById('modal-content').innerHTML = content + `<br><br><button onclick="closeModal()">ЗАКРЫТЬ</button>`;
   document.getElementById('modal').style.display = 'flex';
 }
 
@@ -447,7 +447,7 @@ function closeModal() {
   document.getElementById('modal').style.display = 'none';
 }
 
-// ==================== Р—РђРџРЈРЎРљ ====================
+// ==================== ЗАПУСК ====================
 showPage('login');
 
 setInterval(() => {
