@@ -192,6 +192,8 @@
       text-align: center;
       z-index: 99;
       border-top: 1px solid var(--accent);
+      white-space: nowrap;
+      overflow-x: auto;
     }
     .loading-overlay {
       position: fixed;
@@ -210,7 +212,7 @@
     .hidden {
       display: none;
     }
-    /* Аски-арт логотип */
+    /* Центрирование ASCII-арта */
     .ascii-logo {
       font-family: monospace;
       white-space: pre;
@@ -220,7 +222,44 @@
       text-align: center;
       margin-bottom: 20px;
     }
-    /* Мобильные улучшения */
+    .ascii-logo pre {
+      display: inline-block;
+      text-align: left;
+    }
+    /* Плейсхолдер загрузки картинки */
+    .img-placeholder {
+      background: #111;
+      border: 1px dashed var(--accent);
+      padding: 20px;
+      text-align: center;
+      color: var(--accent);
+      font-size: 12px;
+      margin: 10px 0;
+    }
+    /* Активный контакт в чате */
+    .active-contact {
+      background: var(--accent);
+      color: #000;
+      font-weight: bold;
+      text-shadow: none;
+    }
+    /* Увеличенное фото без лишних рамок */
+    .full-image-modal {
+      text-align: center;
+    }
+    .full-image-modal img {
+      max-width: 100%;
+      max-height: 80vh;
+      border: 2px solid var(--accent);
+      background: #000;
+    }
+    /* Readonly поле для игрока */
+    .readonly-field {
+      background: #0a0a0a;
+      color: #777;
+      cursor: not-allowed;
+      resize: none;
+    }
     @media (max-width: 600px) {
       .container {
         padding: 12px;
@@ -281,7 +320,7 @@
 <body>
 
 <div class="header">
-  <div><span class="accent">[БИАР]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v3.4</div>
+  <div><span class="accent">[БИАР]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v3.6</div>
   <div><span id="current-time"></span></div>
 </div>
 
@@ -304,7 +343,7 @@
 </div>
 
 <div id="modal" class="modal"><div class="modal-content" id="modal-content"></div></div>
-<div id="security-footer" class="security-ticker">СЕТЬ ШИФРУЕТСЯ • УСТАНОВЛЕНИЕ ЗАЩИЩЁННОГО КАНАЛА...</div>
+<div id="security-footer" class="security-ticker">СЕТЬ ШИФРУЕТСЯ • AES-256 • ЗАЩИЩЁННЫЙ СЕРВЕР</div>
 
 <script>
   (function() {
@@ -323,7 +362,6 @@
       return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;');
     }
 
-    // Универсальная модалка
     function showModal(content, onOpen, onClose) {
       const modal = document.getElementById('modal');
       const modalContent = document.getElementById('modal-content');
@@ -337,10 +375,9 @@
     }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
 
-    // Показать увеличенное фото с возможностью вернуться к статье
-    let currentArticleReopenCallback = null;
+    // Увеличенное фото (без лишних рамок, зелёная обводка)
     function showFullImage(src, onCloseCallback) {
-      showModal(`<div style="text-align:center;"><img src="${escapeHtml(src)}" style="max-width:100%; max-height:80vh; border:1px solid var(--accent);"></div>`, null, () => {
+      showModal(`<div class="full-image-modal"><img src="${escapeHtml(src)}" style="max-width:100%; max-height:80vh; border:2px solid var(--accent); background:#000;"></div>`, null, () => {
         if (onCloseCallback) onCloseCallback();
       });
     }
@@ -392,10 +429,11 @@
       showModal(`<h2>ДОСТУП ОТКЛОНЁН</h2><p>Недостаточный уровень доступа.</p>`);
     }
 
-    // === ASCII-ЛОГОТИП ===
+    // ASCII-арт логотип с центрированием
     function getAsciiLogo() {
       return `
         <div class="ascii-logo">
+          <pre>
 +--------------------------------------------------+
 |   ██████╗ ██╗ █████╗ ██████╗                     |
 |   ██╔══██╗██║██╔══██╗██╔══██╗                    |
@@ -405,6 +443,7 @@
 |   ╚═════╝ ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝                    |
 |   БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ               |
 +--------------------------------------------------+
+          </pre>
         </div>
       `;
     }
@@ -413,7 +452,6 @@
     function showHome() {
       const mainContent = document.getElementById('main-content');
       const isAdmin = currentUser.role === 'admin';
-      // Генерация меню в зависимости от роли
       let menuButtons = '';
       if (isAdmin) {
         menuButtons = `
@@ -424,14 +462,15 @@
           <button id="admin-btn">▸ АДМИН-ПАНЕЛЬ</button>
         `;
       } else {
+        // Для игрока: порядок: АРХИВ, АККАУНТ, СВЯЗЬ, ЗАПИСЬ, КАРТА, ВЫХОД, КОНТАКТЫ (выход после карты)
         menuButtons = `
           <button id="archive-btn">▸ АРХИВ ДОКУМЕНТОВ</button>
           <button id="account-btn">▸ АККАУНТ</button>
           <button id="chat-btn">▸ СВЯЗЬ</button>
           <button id="record-btn">▸ ЗАПИСЬ</button>
           <button id="map-btn">▸ КАРТА</button>
-          <button id="contacts-btn">▸ КОНТАКТЫ</button>
           <button id="logout-btn">▸ ВЫХОД ИЗ СИСТЕМЫ</button>
+          <button id="contacts-btn">▸ КОНТАКТЫ</button>
         `;
       }
       mainContent.innerHTML = `
@@ -441,7 +480,7 @@
         <div class="menu-grid">
           ${menuButtons}
         </div>
-        <div class="status-bar" style="margin-top:20px;">🔒 СЕАНС АКТИВЕН</div>
+        <div class="status-bar" style="margin-top:20px;">🔒 СЕАНС АКТИВЕН • ПРОТОКОЛ АУДИТА ВКЛЮЧЁН</div>
       `;
       document.getElementById('archive-btn').onclick = () => showArchive();
       document.getElementById('account-btn').onclick = () => showAccount();
@@ -484,39 +523,54 @@
         const code = document.getElementById('search-code').value.trim().toUpperCase();
         const article = articles.find(a => a.code.toUpperCase() === code);
         if (article) {
-          // Функция для повторного открытия статьи
-          const reopenArticle = () => {
-            showModalForArticle(article);
-          };
-          const showModalForArticle = (art) => {
-            let imgHtml = (art.images || []).map(src => `<img src="${escapeHtml(src)}" style="max-width:100%; margin:10px 0; cursor:pointer;" class="article-img" data-src="${escapeHtml(src)}">`).join('');
+          const showArticleModal = (art) => {
+            let imagesHtml = '';
+            if (art.images && art.images.length) {
+              for (let src of art.images) {
+                const imgId = 'img_' + Date.now() + '_' + Math.random();
+                imagesHtml += `
+                  <div id="${imgId}" class="img-placeholder">[ ЗАГРУЗКА ИЗОБРАЖЕНИЯ ... ]</div>
+                  <script>
+                    (function() {
+                      const img = new Image();
+                      img.onload = function() {
+                        const container = document.getElementById('${imgId}');
+                        if (container) {
+                          container.innerHTML = '<img src="${escapeHtml(src)}" style="max-width:100%; margin:10px 0; cursor:pointer;" class="article-img" data-src="${escapeHtml(src)}">';
+                          const newImg = container.querySelector('.article-img');
+                          if (newImg) {
+                            newImg.onclick = (e) => {
+                              e.stopPropagation();
+                              showFullImage(newImg.getAttribute('data-src'), () => showArticleModal(art));
+                            };
+                          }
+                        }
+                      };
+                      img.onerror = function() {
+                        const container = document.getElementById('${imgId}');
+                        if (container) container.innerHTML = '<div style="color:#f00;">[ ОШИБКА ЗАГРУЗКИ ИЗОБРАЖЕНИЯ ]</div>';
+                      };
+                      img.src = "${escapeHtml(src)}";
+                    })();
+                  <\/script>
+                `;
+              }
+            }
             let adminBtns = currentUser.role === 'admin' ? '<button id="delete-article-btn">Удалить статью</button>' : '';
             showModal(`
               <h2>${escapeHtml(art.title)}</h2>
               <p><strong>Код:</strong> ${escapeHtml(art.code)}</p>
               <p>${escapeHtml(art.text).replace(/\n/g, '<br>')}</p>
-              ${imgHtml}
+              ${imagesHtml}
               ${adminBtns}
             `, () => {
-              // Обработчики после открытия модалки
               if (currentUser.role === 'admin') {
                 const delBtn = document.getElementById('delete-article-btn');
                 if (delBtn) delBtn.onclick = async () => { await deleteArticle(art.id); closeModal(); showArchive(); };
               }
-              // Навешиваем обработчики на картинки: при клике открываем увеличенное фото с возможностью вернуться
-              document.querySelectorAll('.article-img').forEach(img => {
-                img.onclick = (e) => {
-                  e.stopPropagation();
-                  const src = img.getAttribute('data-src');
-                  showFullImage(src, () => {
-                    // После закрытия фото показываем статью заново
-                    showModalForArticle(art);
-                  });
-                };
-              });
             });
           };
-          showModalForArticle(article);
+          showArticleModal(article);
         } else showModal("КОД НЕ НАЙДЕН В АРХИВЕ");
       };
     }
@@ -524,29 +578,43 @@
     let currentChatContact = "ADMIN";
     async function showChat() {
       const mainContent = document.getElementById('main-content');
+      const isPlayer = currentUser.role === 'player';
+      // Для игрока имитация поля ввода с сообщением
+      const inputAreaHtml = isPlayer ? `
+        <div class="input-area">
+          <textarea class="readonly-field" rows="2" readonly style="resize:none; background:#0a0a0a; color:#777;">Ответы недоступны в связи с заморозкой аккаунта. Диалоги находятся в режиме архива.</textarea>
+        </div>
+      ` : `
+        <div class="input-area">
+          <select id="sender-select" style="width:30%; display:${currentUser.role==='admin'?'inline-block':'none'}">
+            <option value="ADMIN">От ADMIN</option>
+            <option value="SI4015">От SI4015</option>
+            <option value="ANDREY TOCHILIN">От ANDREY TOCHILIN</option>
+          </select>
+          <input type="text" id="chat-input" placeholder="Сообщение..." style="width:50%;">
+          <button id="send-msg-btn">ОТПРАВИТЬ</button>
+        </div>
+      `;
       mainContent.innerHTML = `
         <button id="back-home-chat" class="back-btn">← НАЗАД НА ГЛАВНУЮ</button>
         <h2>ЗАЩИЩЁННЫЙ КАНАЛ СВЯЗИ</h2>
         <div class="chat-container">
-          <div class="contacts"><div id="contact-admin" style="padding:14px; cursor:pointer;">ADMIN</div><div id="contact-si" style="padding:14px; cursor:pointer;">SI4015</div></div>
+          <div class="contacts">
+            <div id="contact-admin" style="padding:14px; cursor:pointer;">ADMIN</div>
+            <div id="contact-si" style="padding:14px; cursor:pointer;">SI4015</div>
+          </div>
           <div class="chat-area">
             <div class="messages" id="messages"></div>
-            <div class="input-area" id="input-area" style="${currentUser.role === 'player' ? 'display:none;' : ''}">
-              <select id="sender-select" style="width:30%; display:${currentUser.role==='admin'?'inline-block':'none'}">
-                <option value="ADMIN">От ADMIN</option>
-                <option value="SI4015">От SI4015</option>
-                <option value="ANDREY TOCHILIN">От ANDREY TOCHILIN</option>
-              </select>
-              <input type="text" id="chat-input" placeholder="Сообщение..." style="width:50%;">
-              <button id="send-msg-btn">ОТПРАВИТЬ</button>
-            </div>
+            ${inputAreaHtml}
           </div>
         </div>
       `;
       document.getElementById('back-home-chat').onclick = () => showHome();
-      document.getElementById('contact-admin').onclick = () => openChat('ADMIN');
-      document.getElementById('contact-si').onclick = () => openChat('SI4015');
-      if (currentUser.role !== 'player') {
+      const adminDiv = document.getElementById('contact-admin');
+      const siDiv = document.getElementById('contact-si');
+      adminDiv.onclick = () => openChat('ADMIN');
+      siDiv.onclick = () => openChat('SI4015');
+      if (!isPlayer) {
         document.getElementById('send-msg-btn').onclick = () => sendMessage();
         document.getElementById('chat-input').addEventListener('keypress', e => { if(e.key === 'Enter') sendMessage(); });
       }
@@ -555,6 +623,18 @@
 
     async function openChat(contact) {
       currentChatContact = contact;
+      // Подсветка активного контакта
+      const adminDiv = document.getElementById('contact-admin');
+      const siDiv = document.getElementById('contact-si');
+      if (adminDiv && siDiv) {
+        if (contact === 'ADMIN') {
+          adminDiv.classList.add('active-contact');
+          siDiv.classList.remove('active-contact');
+        } else {
+          siDiv.classList.add('active-contact');
+          adminDiv.classList.remove('active-contact');
+        }
+      }
       const messagesDiv = document.getElementById('messages');
       if (!messagesDiv) return;
       const msgs = await fetchMessages(contact);
@@ -715,11 +795,17 @@
       const el = document.getElementById('current-time');
       if (el) el.textContent = new Date().toLocaleString('ru-RU');
     }, 1000);
-    const msgs = ["СЕТЬ ШИФРУЕТСЯ • AES-256", "ВНЕШНИЕ КАНАЛЫ ЗАБЛОКИРОВАНЫ", "КЛЮЧИ ОБНОВЛЕНЫ • ПРОТОКОЛ M-5"];
+    const tickerMessages = [
+      "СЕТЬ ШИФРУЕТСЯ • AES-256 • ЗАЩИЩЁННЫЙ СЕРВЕР",
+      "ВНЕШНИЕ КАНАЛЫ ЗАБЛОКИРОВАНЫ • ПРОСЛУШКА НЕВОЗМОЖНА",
+      "КЛЮЧИ ОБНОВЛЕНЫ • ПРОТОКОЛ M-5",
+      "ПОПЫТКА НЕСАНКЦИОНИРОВАННОГО ДОСТУПА ЗАФИКСИРОВАНА",
+      "СИСТЕМА АНТИ-ФИШИНГ АКТИВНА"
+    ];
     let idx = 0;
     setInterval(() => {
       const footer = document.getElementById('security-footer');
-      if (footer) footer.textContent = msgs[idx % msgs.length] + " • " + new Date().toLocaleTimeString();
+      if (footer) footer.textContent = tickerMessages[idx % tickerMessages.length] + " • " + new Date().toLocaleTimeString();
       idx++;
     }, 10000);
   })();
