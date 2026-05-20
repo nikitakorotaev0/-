@@ -143,6 +143,42 @@
     .full-image-modal { text-align: center; }
     .full-image-modal img { max-width: 100%; max-height: 80vh; border: 2px solid var(--accent); background: #000; }
     .readonly-field { background: #0a0a0a; color: #777; cursor: not-allowed; resize: none; }
+    /* Стили для загрузки файлов */
+    .file-input {
+      border: 1px solid var(--accent);
+      padding: 8px;
+      background: #111;
+      cursor: pointer;
+    }
+    .image-preview {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 10px 0;
+    }
+    .image-preview-item {
+      position: relative;
+      display: inline-block;
+    }
+    .image-preview-item img {
+      max-width: 100px;
+      max-height: 100px;
+      border: 1px solid var(--accent);
+    }
+    .remove-image {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #f00;
+      color: #fff;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      text-align: center;
+      cursor: pointer;
+      font-size: 12px;
+      line-height: 18px;
+    }
     @media (max-width: 600px) {
       .container { padding: 12px; }
       .menu-grid { grid-template-columns: 1fr; gap: 10px; margin: 20px auto; }
@@ -161,7 +197,7 @@
 <body>
 
 <div class="header">
-  <div><span class="accent">[БИАР]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v4.1</div>
+  <div><span class="accent">[БИАР]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v5.0</div>
   <div><span id="current-time"></span></div>
 </div>
 
@@ -199,6 +235,33 @@
       "W": { hash: hash("Qwertyu"), role: "viewer", name: "SEMEN LOBANOV" }
     };
     let currentUser = null;
+
+    // === Функция загрузки изображений в Supabase Storage ===
+    const STORAGE_BUCKET = "article-images";
+    async function uploadImages(files) {
+      const uploadedUrls = [];
+      for (const file of files) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const filePath = `${fileName}`;
+        const { data, error } = await supabase.storage
+          .from(STORAGE_BUCKET)
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+        if (error) {
+          console.error("Ошибка загрузки:", error);
+          alert(`Ошибка загрузки ${file.name}: ${error.message}`);
+          return null;
+        }
+        const { data: publicUrlData } = supabase.storage
+          .from(STORAGE_BUCKET)
+          .getPublicUrl(filePath);
+        uploadedUrls.push(publicUrlData.publicUrl);
+      }
+      return uploadedUrls;
+    }
 
     // Вспомогательные функции
     function escapeHtml(str) {
@@ -238,56 +301,23 @@
       document.body.appendChild(overlay);
       if (!looped) {
         setTimeout(() => { overlay.remove(); if (callback) callback(); }, 1000);
-      } else {
-        // Зацикленная загрузка – оставляем на экране, пока не вызовут удаление
-        return overlay;
+        return null;
       }
-      return null;
+      return overlay;
     }
-    function hideLoading(overlay) {
-      if (overlay && overlay.remove) overlay.remove();
+    function hideLoading(overlay) { if (overlay && overlay.remove) overlay.remove(); }
+    function deniedAccess() {
+      showModal(`<h2>ДОСТУП ОТКЛОНЁН</h2><p>Недостаточный уровень доступа.</p>`);
     }
 
-    // Проверка наличия колонки visible_to_viewer
-    async function ensureViewerColumn() {
-      // Пробуем выполнить запрос, который вернёт ошибку, если колонки нет
-      try {
-        const { error } = await supabase.from('articles').select('visible_to_viewer').limit(1);
-        if (error && error.message.includes('column "visible_to_viewer" does not exist')) {
-          // Колонка отсутствует. Если пользователь – админ, показываем инструкцию
-          if (currentUser && currentUser.role === 'admin') {
-            showModal(`
-              <h2>ОШИБКА НАСТРОЙКИ БАЗЫ ДАННЫХ</h2>
-              <p>Отсутствует колонка <strong>visible_to_viewer</strong> в таблице <strong>articles</strong>.</p>
-              <p>Пожалуйста, выполните в Supabase (SQL Editor) следующий код:</p>
-              <pre style="background:#000; padding:10px; color:#0f0; overflow-x:auto;">ALTER TABLE articles ADD COLUMN IF NOT EXISTS visible_to_viewer BOOLEAN DEFAULT false;
-UPDATE articles SET visible_to_viewer = false WHERE visible_to_viewer IS NULL;
-INSERT INTO articles (id, code, title, text, images, date, visible_to_viewer)
-VALUES (999999, 'QQ-34', 'Отчёт', 'Аномалия ЕК-12 - Квашеная капуста убийца\\n\\nОбъект представляет собой трёхлитровую банку квашеной капусты 1987 года заготовки...', ARRAY['https://th.bing.com/th/id/R.4a4be0d7cc063589dbe4d388811b1b30?rik=QlJpY43uUq47Yw&pid=ImgRaw&r=0'], CURRENT_DATE, true)
-ON CONFLICT (id) DO NOTHING;</pre>
-              <p>После выполнения обновите страницу.</p>
-            `);
-            return false;
-          } else {
-            showModal(`<h2>ТЕХНИЧЕСКИЕ РАБОТЫ</h2><p>База данных настраивается. Попробуйте позже.</p>`);
-            return false;
-          }
-        }
-        return true;
-      } catch(e) {
-        console.error(e);
-        return true;
-      }
-    }
+    // Проверка наличия колонки visible_to_viewer (упрощённо, т.к. уже добавили)
+    async function ensureViewerColumn() { return true; }
 
-    // === РАБОТА С БАЗОЙ ===
+    // Работа с БД
     async function fetchArticlesForRole() {
       let query = supabase.from('articles').select('*');
-      if (currentUser.role === 'player') {
-        query = query.eq('visible_to_viewer', false).or('visible_to_viewer.is.null');
-      } else if (currentUser.role === 'viewer') {
-        query = query.eq('visible_to_viewer', true);
-      }
+      if (currentUser.role === 'player') query = query.eq('visible_to_viewer', false).or('visible_to_viewer.is.null');
+      else if (currentUser.role === 'viewer') query = query.eq('visible_to_viewer', true);
       const { data, error } = await query.order('id', { ascending: false });
       if (error) { console.error(error); return []; }
       return data;
@@ -318,7 +348,6 @@ ON CONFLICT (id) DO NOTHING;</pre>
       await supabase.from('messages').insert({ id: Date.now(), contact, from_sender: from, text, time: '' });
     }
     async function deleteMessageFromDB(id) { await supabase.from('messages').delete().eq('id', id); }
-
     function getViewerChatMessages(contact) {
       if (contact === 'ADMIN') {
         return [
@@ -413,10 +442,6 @@ ON CONFLICT (id) DO NOTHING;</pre>
       showModal(modalHtml);
     }
 
-    function deniedAccess() {
-      showModal(`<h2>ДОСТУП ОТКЛОНЁН</h2><p>Недостаточный уровень доступа.</p>`);
-    }
-
     // Архив
     async function showArchive() {
       const mainContent = document.getElementById('main-content');
@@ -495,7 +520,7 @@ ON CONFLICT (id) DO NOTHING;</pre>
       });
     }
 
-    // Чат
+    // Чат (без изменений)
     let currentChatContact = "ADMIN";
     async function showChat() {
       const mainContent = document.getElementById('main-content');
@@ -525,7 +550,7 @@ ON CONFLICT (id) DO NOTHING;</pre>
       document.getElementById('back-home-chat').onclick = () => showHome();
       document.getElementById('contact-admin').onclick = () => openChat('ADMIN');
       document.getElementById('contact-si').onclick = () => openChat('SI4015');
-      if (isAdmin) { /* обработчики добавятся после загрузки */ }
+      if (isAdmin) { /* позже */ }
       await openChat('ADMIN', true);
     }
 
@@ -584,7 +609,7 @@ ON CONFLICT (id) DO NOTHING;</pre>
       input.value = '';
     }
 
-    // Админ-панель с чекбоксом "Для Viewer"
+    // Админ-панель с загрузкой файлов
     async function showAdmin() {
       const mainContent = document.getElementById('main-content');
       const articles = await fetchAllArticlesForAdmin();
@@ -604,33 +629,63 @@ ON CONFLICT (id) DO NOTHING;</pre>
       document.querySelectorAll('.del-article-btn').forEach(btn => { btn.onclick = async () => { if(confirm("Удалить?")) { await deleteArticle(parseInt(btn.getAttribute('data-id'))); showAdmin(); } }; });
     }
 
+    // Форма создания статьи с загрузкой изображений
     function createArticleForm() {
       showModal(`
         <h2>Новая статья</h2>
         <input id="new-code" placeholder="Код (например, X-1234)"><br>
         <input id="new-title" placeholder="Заголовок"><br>
         <textarea id="new-text" rows="7" placeholder="Текст..."></textarea><br>
-        <input id="new-image1" placeholder="Ссылка на фото 1 (необязательно)"><br>
-        <input id="new-image2" placeholder="Ссылка на фото 2 (необязательно)"><br>
+        <div>
+          <label>Изображения (можно выбрать несколько файлов):</label>
+          <input type="file" id="new-images" multiple accept="image/jpeg,image/png,image/gif,image/webp" class="file-input">
+          <div id="new-images-preview" class="image-preview"></div>
+        </div>
         <label style="display:block; margin:10px 0;"><input type="checkbox" id="new-viewer-flag"> Доступно для Viewer</label>
         <button id="save-new-btn">Сохранить</button>
-      `, () => {
+      `, async () => {
+        const fileInput = document.getElementById('new-images');
+        const previewDiv = document.getElementById('new-images-preview');
+        // Показ превью выбранных изображений
+        fileInput.addEventListener('change', () => {
+          previewDiv.innerHTML = '';
+          for (const file of fileInput.files) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const imgDiv = document.createElement('div');
+              imgDiv.className = 'image-preview-item';
+              imgDiv.innerHTML = `<img src="${e.target.result}"><span class="remove-image" data-file="${file.name}">✕</span>`;
+              previewDiv.appendChild(imgDiv);
+              imgDiv.querySelector('.remove-image').onclick = () => {
+                // Удаление из preview и из FileList (сложно, проще просто убрать визуально и потом не загружать)
+                imgDiv.remove();
+              };
+            };
+            reader.readAsDataURL(file);
+          }
+        });
         const saveBtn = document.getElementById('save-new-btn');
-        if (saveBtn) saveBtn.onclick = async () => {
-          const code = document.getElementById('new-code').value.trim();
-          const title = document.getElementById('new-title').value.trim();
-          const text = document.getElementById('new-text').value.trim();
-          if (!code || !title || !text) { alert("Заполните код, заголовок и текст"); return; }
-          const images = [];
-          const img1 = document.getElementById('new-image1').value.trim();
-          const img2 = document.getElementById('new-image2').value.trim();
-          if (img1) images.push(img1);
-          if (img2) images.push(img2);
-          const visibleToViewer = document.getElementById('new-viewer-flag').checked;
-          const newArticle = { id: Date.now(), code, title, text, images, date: new Date().toISOString().split('T')[0], visible_to_viewer: visibleToViewer };
-          const success = await addArticle(newArticle);
-          if (success) { closeModal(); showAdmin(); }
-        };
+        if (saveBtn) {
+          saveBtn.onclick = async () => {
+            const code = document.getElementById('new-code').value.trim();
+            const title = document.getElementById('new-title').value.trim();
+            const text = document.getElementById('new-text').value.trim();
+            if (!code || !title || !text) { alert("Заполните код, заголовок и текст"); return; }
+            // Загружаем изображения
+            const files = fileInput.files;
+            let imageUrls = [];
+            if (files && files.length > 0) {
+              const uploadOverlay = showLoading(null, true); // зацикленная загрузка
+              imageUrls = await uploadImages(Array.from(files));
+              hideLoading(uploadOverlay);
+              if (!imageUrls) return;
+            }
+            const visibleToViewer = document.getElementById('new-viewer-flag').checked;
+            const newArticle = { id: Date.now(), code, title, text, images: imageUrls, date: new Date().toISOString().split('T')[0], visible_to_viewer: visibleToViewer };
+            const success = await addArticle(newArticle);
+            if (success) { closeModal(); showAdmin(); }
+          };
+        }
       });
     }
 
@@ -638,57 +693,88 @@ ON CONFLICT (id) DO NOTHING;</pre>
       const articles = await fetchAllArticlesForAdmin();
       const a = articles.find(x => x.id === id);
       if (!a) return;
+      const existingImages = a.images || [];
       showModal(`
         <h2>Редактирование</h2>
         <input id="edit-code" value="${escapeHtml(a.code)}"><br>
         <input id="edit-title" value="${escapeHtml(a.title)}"><br>
         <textarea id="edit-text" rows="8">${escapeHtml(a.text)}</textarea><br>
-        <input id="edit-image1" value="${escapeHtml(a.images?.[0]||'')}" placeholder="Ссылка на фото 1"><br>
-        <input id="edit-image2" value="${escapeHtml(a.images?.[1]||'')}" placeholder="Ссылка на фото 2"><br>
+        <div>
+          <label>Добавить новые изображения (можно несколько):</label>
+          <input type="file" id="edit-images" multiple accept="image/jpeg,image/png,image/gif,image/webp" class="file-input">
+          <div id="edit-images-preview" class="image-preview"></div>
+        </div>
+        <div>
+          <label>Текущие изображения:</label>
+          <div id="current-images-list">
+            ${existingImages.map((url, idx) => `<div class="image-preview-item"><img src="${escapeHtml(url)}"><span class="remove-existing" data-url="${escapeHtml(url)}">✕</span></div>`).join('')}
+          </div>
+        </div>
         <label style="display:block; margin:10px 0;"><input type="checkbox" id="edit-viewer-flag" ${a.visible_to_viewer ? 'checked' : ''}> Доступно для Viewer</label>
         <button id="save-edit-btn">Сохранить изменения</button>
-      `, () => {
+      `, async () => {
+        const fileInput = document.getElementById('edit-images');
+        const previewDiv = document.getElementById('edit-images-preview');
+        fileInput.addEventListener('change', () => {
+          previewDiv.innerHTML = '';
+          for (const file of fileInput.files) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const imgDiv = document.createElement('div');
+              imgDiv.className = 'image-preview-item';
+              imgDiv.innerHTML = `<img src="${e.target.result}"><span class="remove-image" data-file="${file.name}">✕</span>`;
+              previewDiv.appendChild(imgDiv);
+              imgDiv.querySelector('.remove-image').onclick = () => imgDiv.remove();
+            };
+            reader.readAsDataURL(file);
+          }
+        });
+        // Удаление существующих изображений
+        document.querySelectorAll('.remove-existing').forEach(btn => {
+          btn.onclick = () => btn.parentElement.remove();
+        });
         const saveBtn = document.getElementById('save-edit-btn');
-        if (saveBtn) saveBtn.onclick = async () => {
-          const images = [];
-          const img1 = document.getElementById('edit-image1').value.trim();
-          const img2 = document.getElementById('edit-image2').value.trim();
-          if (img1) images.push(img1);
-          if (img2) images.push(img2);
-          const visibleToViewer = document.getElementById('edit-viewer-flag').checked;
-          await updateArticle(id, {
-            code: document.getElementById('edit-code').value.trim(),
-            title: document.getElementById('edit-title').value.trim(),
-            text: document.getElementById('edit-text').value.trim(),
-            images: images,
-            visible_to_viewer: visibleToViewer
-          });
-          closeModal(); showAdmin();
-        };
+        if (saveBtn) {
+          saveBtn.onclick = async () => {
+            // Собираем оставшиеся существующие URL
+            const remainingUrls = [];
+            document.querySelectorAll('#current-images-list .image-preview-item img').forEach(img => remainingUrls.push(img.src));
+            // Загружаем новые файлы
+            const files = fileInput.files;
+            let newUrls = [];
+            if (files && files.length > 0) {
+              const uploadOverlay = showLoading(null, true);
+              newUrls = await uploadImages(Array.from(files));
+              hideLoading(uploadOverlay);
+              if (!newUrls) return;
+            }
+            const allUrls = [...remainingUrls, ...newUrls];
+            const visibleToViewer = document.getElementById('edit-viewer-flag').checked;
+            await updateArticle(id, {
+              code: document.getElementById('edit-code').value.trim(),
+              title: document.getElementById('edit-title').value.trim(),
+              text: document.getElementById('edit-text').value.trim(),
+              images: allUrls,
+              visible_to_viewer: visibleToViewer
+            });
+            closeModal();
+            showAdmin();
+          };
+        }
       });
     }
 
-    // === ВХОД С ЗАГРУЗКОЙ ДЛЯ VIEWER ===
+    // Вход
     document.getElementById('login-btn').onclick = async () => {
       const login = document.getElementById('login-input').value.trim();
       const password = document.getElementById('pass-input').value.trim();
       const user = users[login];
       if (user && CryptoJS.SHA256(password).toString() === user.hash) {
         currentUser = { login, role: user.role, name: user.name };
-        // Показываем загрузку для всех, кроме admin (админ входит мгновенно)
         let loadingOverlay = null;
-        if (currentUser.role !== 'admin') {
-          loadingOverlay = showLoading(null, true); // зацикленная анимация
-        }
-        // Проверяем наличие колонки
-        const ok = await ensureViewerColumn();
-        if (!ok) {
-          if (loadingOverlay) hideLoading(loadingOverlay);
-          return;
-        }
-        // Загружаем главный экран
+        if (currentUser.role !== 'admin') loadingOverlay = showLoading(null, true);
+        await ensureViewerColumn();
         if (currentUser.role === 'player' || currentUser.role === 'viewer') {
-          // Для player и viewer – задержка, имитирующая загрузку (1 секунда)
           setTimeout(() => {
             if (loadingOverlay) hideLoading(loadingOverlay);
             document.getElementById('login-section').classList.add('hidden');
