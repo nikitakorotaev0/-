@@ -7,7 +7,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <style>
-    /* (все стили такие же, как в v7.0.2, без изменений) */
+    /* (все стили такие же, как в v7.0.3, без изменений) */
     :root { --bg: #0a0a0a; --accent: #00cc55; --gray: #bbbbbb; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: var(--bg); color: var(--gray); font-family: 'Courier New', monospace; overflow: hidden; height: 100vh; }
@@ -60,7 +60,7 @@
 <body>
 
 <div class="header">
-  <div><span class="accent">[BIAR]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v7.0.3</div>
+  <div><span class="accent">[BIAR]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v7.0.4</div>
   <div><span id="current-time"></span></div>
 </div>
 
@@ -71,7 +71,7 @@
       <p style="margin:20px 0;">ДОСТУП К АРХИВУ РАЗРЕШЁН ТОЛЬКО АВТОРИЗОВАННЫМ АГЕНТАМ</p>
       <div style="max-width:420px; margin:40px auto;">
         <input type="text" id="login-input" placeholder="Код агента" autocomplete="off"><br>
-        <input type="password" id="pass-input" placeholder="Пароль"><br>
+        <input type="password" id="pass-input" placeholder="Пароль" autocomplete="off"><br>
         <button id="login-btn">ВХОД В СИСТЕМУ</button>
       </div>
       <div style="font-size:11px; color:#444;">ЗАЩИЩЁННЫЙ ВХОД • ТОЛЬКО ДЛЯ СОТРУДНИКОВ</div>
@@ -93,10 +93,6 @@
       "Admin", "admin", "ADMINISTRATOR",
       "W", "viewer", "SEMEN LOBANOV"
     ];
-    // Правильные хэши SHA-256 для паролей:
-    // AAF2615w -> a8c5f5a9b5c4e3d2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b7c6d5e4f3a2b1c0d9e8
-    // kawasaki -> e697c5113ce58b708b7c1f31f0423cc021d0bf3aacd3d63865c53a5f817ce278
-    // Qwertyu -> 7c8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8
     const passwordHashes = {
       "AT2167": "a8c5f5a9b5c4e3d2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b7c6d5e4f3a2b1c0d9e8",
       "Admin": "e697c5113ce58b708b7c1f31f0423cc021d0bf3aacd3d63865c53a5f817ce278",
@@ -192,7 +188,7 @@
     }
     async function deleteArticle(id) { await supabase.from('articles').delete().eq('id', id); }
 
-    // ========== РАБОТА С ПАСХАЛКАМИ (С ОБРАБОТКОЙ ОШИБКИ RLS) ==========
+    // ========== РАБОТА С ПАСХАЛКАМИ ==========
     async function fetchEasterEggs() {
       const { data, error } = await supabase.from('easter_eggs').select('*').order('id', { ascending: true });
       if (error) {
@@ -753,10 +749,13 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
       });
     }
 
-    // ========== ВХОД ==========
+    // ========== ВХОД (С ОТЛАДКОЙ) ==========
     document.getElementById('login-btn').onclick = async () => {
       const login = document.getElementById('login-input').value.trim();
-      const password = document.getElementById('pass-input').value.trim();
+      const password = document.getElementById('pass-input').value;
+      console.log("🔍 Введённый пароль (сырой):", password);
+      console.log("🔍 Длина пароля:", password.length);
+      console.log("🔍 Коды символов:", Array.from(password).map(c => c.charCodeAt(0)));
       const user = users[login];
       if (user) {
         const enteredHash = CryptoJS.SHA256(password).toString();
@@ -771,15 +770,10 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
           } else { if (loadingOverlay) hideLoading(loadingOverlay); document.getElementById('login-section').classList.add('hidden'); document.getElementById('main-section').classList.remove('hidden'); showHome(); }
           return;
         } else {
-          // Подсказка для игрока
-          if (login === "AT2167") {
-            alert("Неверный пароль для агента AT2167. Попробуйте: AAF2615w (все буквы заглавные, внимательно!)");
-          } else {
-            alert("Неверный код агента или пароль.");
-          }
+          alert(`Неверный пароль.\nВведено: "${password}"\nДлина: ${password.length}\nПопробуйте пароль: AAF2615w (все заглавные, без пробелов)`);
         }
       } else {
-        alert("Неверный код агента или пароль.");
+        alert("Неверный код агента.");
       }
     };
 
