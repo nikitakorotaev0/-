@@ -7,7 +7,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <style>
-    /* (все стили без изменений, такие же как в v7.0.4) */
     :root { --bg: #0a0a0a; --accent: #00cc55; --gray: #bbbbbb; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: var(--bg); color: var(--gray); font-family: 'Courier New', monospace; overflow: hidden; height: 100vh; }
@@ -93,7 +92,6 @@
       "Admin", "admin", "ADMINISTRATOR",
       "W", "viewer", "SEMEN LOBANOV"
     ];
-    // Правильные хэши (проверены в консоли)
     const passwordHashes = {
       "AT2167": "be1f4506b29b2465352f725c9302b029ff9b76e95f555c8ff3c6c3b69ea78355",
       "Admin": "e697c5113ce58b708b7c1f31f0423cc021d0bf3aacd3d63865c53a5f817ce278",
@@ -314,7 +312,7 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
       }
     }
 
-    // ========== ПЛАШКА О ЗАДЕРЖКАХ ==========
+    // ========== ПЛАШКА О ЗАДЕРЖКАХ (встроена в showHome) ==========
     function showDelayBanner() {
       const mainContent = document.getElementById('main-content');
       if (sessionStorage.getItem('delay_banner_hidden')) return;
@@ -358,6 +356,8 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
         `;
       }
       mainContent.innerHTML = `${getAsciiLogo()}<h2 style="text-align:center;">ТЕРМИНАЛ</h2><div class="menu-grid">${menuButtons}</div><div class="logout-container"><button id="logout-btn">▸ ВЫХОД ИЗ СИСТЕМЫ</button></div><div class="status-bar" style="margin-top:20px;">🔒 СЕАНС АКТИВЕН • ПРОТОКОЛ АУДИТА ВКЛЮЧЁН</div>`;
+      
+      // Показываем плашку о задержках (один раз за сессию)
       showDelayBanner();
 
       document.getElementById('archive-btn').onclick = () => showArchive();
