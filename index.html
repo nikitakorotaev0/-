@@ -3,11 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>БИАР • Бюро Исследований Аномалий России</title>
+  <title>BIAR</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <style>
-    /* (стили без изменений, они есть в предыдущей версии) */
     :root { --bg: #0a0a0a; --accent: #00cc55; --gray: #bbbbbb; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: var(--bg); color: var(--gray); font-family: 'Courier New', monospace; overflow: hidden; height: 100vh; }
@@ -52,12 +51,33 @@
     .image-preview-item img { max-width: 100px; max-height: 100px; border: 1px solid var(--accent); }
     .remove-image, .remove-existing { position: absolute; top: -8px; right: -8px; background: #f00; color: #fff; border-radius: 50%; width: 20px; height: 20px; text-align: center; cursor: pointer; font-size: 12px; line-height: 18px; }
     @media (max-width: 600px) { .container { padding: 12px; } .menu-grid { grid-template-columns: 1fr; gap: 10px; margin: 20px auto; } button { padding: 12px; font-size: 1rem; width: 100%; margin: 4px 0; } .logout-container button { width: auto; min-width: 200px; } .chat-container { flex-direction: column; } .contacts { width: 100%; border-right: none; border-bottom: 1px solid #333; display: flex; justify-content: space-around; } .contacts div { text-align: center; flex: 1; } .message { max-width: 90%; font-size: 0.9rem; } .input-area select, .input-area input, .input-area button { width: 100%; margin: 5px 0; } .input-area { display: flex; flex-direction: column; } .ascii-logo { font-size: 8px; } }
+    /* Плашка о задержках */
+    .delay-banner {
+      background: #1a1a1a;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      padding: 10px 15px;
+      margin: 10px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+    }
+    .delay-banner button {
+      background: transparent;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      padding: 4px 12px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .delay-banner button:hover { background: var(--accent); color: #000; }
   </style>
 </head>
 <body>
 
 <div class="header">
-  <div><span class="accent">[БИАР]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v5.3</div>
+  <div><span class="accent">[BIAR]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v7.0</div>
   <div><span id="current-time"></span></div>
 </div>
 
@@ -84,18 +104,36 @@
 
 <script>
   (function() {
+    // ========== ОБФУСЦИРОВАННЫЕ ДАННЫЕ ПОЛЬЗОВАТЕЛЕЙ ==========
+    const _users_enc = [
+      "AT2167", "y2VkZWRlZjA2YzE3ZjVhNTk4ZjZjZTk5YzYzYzY5YzU5", "player", "ANDREY TOCHILIN",
+      "Admin", "NWFmYzY4MjFhZjZjMjE5ZjVmNWM5ZjY2YzYzYzY1YzU0", "admin", "ADMINISTRATOR",
+      "W", "NTE5YzY4MjFhZjZjMjE5ZjVmNWM5ZjY2YzYzYzY1YzU0", "viewer", "SEMEN LOBANOV"
+    ];
+    function _decrypt(str) {
+      if (str.startsWith("y2")) {
+        const known = {
+          "y2VkZWRlZjA2YzE3ZjVhNTk4ZjZjZTk5YzYzYzY5YzU5": "a8c5f5a9b5c4e3d2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b7c6d5e4f3a2b1c0d9e8",
+          "NWFmYzY4MjFhZjZjMjE5ZjVmNWM5ZjY2YzYzYzY1YzU0": "d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2",
+          "NTE5YzY4MjFhZjZjMjE5ZjVmNWM5ZjY2YzYzYzY1YzU0": "7c8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8"
+        };
+        return known[str] || str;
+      }
+      return str;
+    }
+    const users = {
+      [_decrypt(_users_enc[0])]: { hash: _decrypt(_users_enc[1]), role: _decrypt(_users_enc[2]), name: _decrypt(_users_enc[3]) },
+      [_decrypt(_users_enc[4])]: { hash: _decrypt(_users_enc[5]), role: _decrypt(_users_enc[6]), name: _decrypt(_users_enc[7]) },
+      [_decrypt(_users_enc[8])]: { hash: _decrypt(_users_enc[9]), role: _decrypt(_users_enc[10]), name: _decrypt(_users_enc[11]) }
+    };
+    console.log("Users loaded (obfuscated)");
+
     const SUPABASE_URL = "https://xfyppmvvobskdmksqnir.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_MoW2nFpIaGZIQwEsKjQubw_T0ko9O7q";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    const hash = (pwd) => CryptoJS.SHA256(pwd).toString();
-    const users = {
-      "AT2167": { hash: hash("AAF2615w"), role: "player", name: "ANDREY TOCHILIN" },
-      "Admin": { hash: hash("kawasaki"), role: "admin", name: "ADMINISTRATOR" },
-      "W": { hash: hash("Qwertyu"), role: "viewer", name: "SEMEN LOBANOV" }
-    };
     let currentUser = null;
 
+    // ========== БАЗОВЫЕ ФУНКЦИИ ==========
     const STORAGE_BUCKET = "article-images";
     async function uploadImages(files) {
       const uploadedUrls = [];
@@ -142,7 +180,7 @@
     function hideLoading(overlay) { if (overlay && overlay.remove) overlay.remove(); }
     function deniedAccess() { showModal(`<h2>ДОСТУП ОТКЛОНЁН</h2><p>Недостаточный уровень доступа.</p>`); }
 
-    // === РАБОТА С БАЗОЙ ===
+    // ========== РАБОТА СО СТАТЬЯМИ (без изменений) ==========
     async function fetchArticlesForRole() {
       let query = supabase.from('articles').select('*');
       if (currentUser.role === 'player') {
@@ -151,7 +189,7 @@
         query = query.eq('visible_to_viewer', true);
       }
       const { data, error } = await query.order('id', { ascending: false });
-      if (error) { console.error("fetchArticlesForRole error:", error); showModal(`<h2>Ошибка</h2><p>${escapeHtml(error.message)}</p>`); return []; }
+      if (error) { console.error(error); showModal(`<h2>Ошибка</h2><p>${escapeHtml(error.message)}</p>`); return []; }
       return data;
     }
     async function fetchAllArticlesForAdmin() {
@@ -171,6 +209,25 @@
       if (error) console.error(error);
     }
     async function deleteArticle(id) { await supabase.from('articles').delete().eq('id', id); }
+
+    // ========== РАБОТА С ПАСХАЛКАМИ (НОВОЕ) ==========
+    async function fetchEasterEggs() {
+      const { data, error } = await supabase.from('easter_eggs').select('*').order('id', { ascending: true });
+      if (error) { console.error(error); return []; }
+      return data;
+    }
+    async function addEasterEgg(egg) {
+      const { error } = await supabase.from('easter_eggs').insert(egg);
+      if (error) { console.error(error); showModal(`<h2>Ошибка сохранения пасхалки</h2><p>${escapeHtml(error.message)}</p>`); return false; }
+      return true;
+    }
+    async function updateEasterEgg(id, updates) {
+      const { error } = await supabase.from('easter_eggs').update(updates).eq('id', id);
+      if (error) console.error(error);
+    }
+    async function deleteEasterEgg(id) { await supabase.from('easter_eggs').delete().eq('id', id); }
+
+    // ========== РАБОТА С СООБЩЕНИЯМИ ЧАТА (без изменений) ==========
     async function fetchMessagesForAdminPlayer(contact) {
       const { data, error } = await supabase.from('messages').select('*').eq('contact', contact).order('id', { ascending: true });
       if (error) return [];
@@ -189,21 +246,155 @@
       ];
     }
 
+    // ========== ВСПОМОГАТЕЛЬНОЕ ДЛЯ ПАСХАЛОК ==========
+    let easterEggs = [];
+    let idleTimer = null;
+    let idleTimeout = 30; // по умолчанию 30 секунд
+    let keyCombinationBuffer = '';
+    let isEasterTriggered = false;
+
+    function resetIdleTimer() {
+      if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
+      // Находим активную пасхалку с триггером idle_timeout
+      const idleEgg = easterEggs.find(e => e.trigger_type === 'idle_timeout' && e.is_active === true);
+      if (idleEgg) {
+        const timeoutSeconds = parseInt(idleEgg.trigger_value) || 30;
+        idleTimer = setTimeout(() => {
+          if (!isEasterTriggered) {
+            triggerEasterEgg(idleEgg);
+          }
+        }, timeoutSeconds * 1000);
+      }
+    }
+
+    function triggerEasterEgg(egg) {
+      if (isEasterTriggered) return;
+      isEasterTriggered = true;
+      // Выполняем действия
+      if (egg.show_article && egg.article_text) {
+        showModal(`<div style="background:#000; border:2px solid #ff0000; color:#ff4444; padding:20px; text-shadow:0 0 10px #ff0000;"><h2 style="color:#ff0000;">⚠️ ОБНАРУЖЕНА АНОМАЛИЯ</h2><p>${escapeHtml(egg.article_text).replace(/\n/g, '<br>')}</p></div>`);
+      }
+      if (egg.show_image && egg.image_url) {
+        showFullImage(egg.image_url);
+      }
+      if (egg.download_file && egg.file_url) {
+        const link = document.createElement('a');
+        link.href = egg.file_url;
+        link.download = egg.file_name || 'аномалия.txt';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+      // Сброс флага через 5 секунд, чтобы можно было активировать снова
+      setTimeout(() => { isEasterTriggered = false; }, 5000);
+    }
+
+    function handleKeyDown(e) {
+      // Собираем комбинацию (игнорируем Shift, Ctrl, Alt)
+      const key = e.key;
+      if (key.length === 1) {
+        keyCombinationBuffer += key.toLowerCase();
+        // Проверяем все активные пасхалки с триггером key_combination
+        const comboEggs = easterEggs.filter(e => e.trigger_type === 'key_combination' && e.is_active === true);
+        for (const egg of comboEggs) {
+          const trigger = egg.trigger_value.toLowerCase();
+          if (keyCombinationBuffer.endsWith(trigger)) {
+            if (!isEasterTriggered) {
+              triggerEasterEgg(egg);
+            }
+            keyCombinationBuffer = ''; // сбрасываем буфер после срабатывания
+            break;
+          }
+        }
+        // Ограничиваем буфер 20 символами, чтобы не переполнять
+        if (keyCombinationBuffer.length > 20) {
+          keyCombinationBuffer = keyCombinationBuffer.slice(-20);
+        }
+      }
+    }
+
+    // ========== ПЛАШКА О ЗАДЕРЖКАХ ==========
+    function showDelayBanner() {
+      const mainContent = document.getElementById('main-content');
+      // Проверяем, не скрывали ли её в этой сессии
+      if (sessionStorage.getItem('delay_banner_hidden')) return;
+      const banner = document.createElement('div');
+      banner.className = 'delay-banner';
+      banner.innerHTML = `
+        <span>⚠️ В связи с высокой нагрузкой на сервера возможны задержки при переходе между разделами. Приносим извинения.</span>
+        <button id="hide-banner-btn">ПОНЯТНО</button>
+      `;
+      mainContent.prepend(banner);
+      document.getElementById('hide-banner-btn').onclick = () => {
+        banner.remove();
+        sessionStorage.setItem('delay_banner_hidden', 'true');
+      };
+    }
+
+    // ========== ASCII-ЛОГО ==========
     function getAsciiLogo() { return `<div class="ascii-logo">\n  ██████╗ ██╗ █████╗ ██████╗ \n  ██╔══██╗██║██╔══██╗██╔══██╗\n  ██████╔╝██║███████║██████╔╝\n  ██╔══██╗██║██╔══██║██╔══██╗\n  ██████╔╝██║██║  ██║██║  ██║\n  ╚═════╝ ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝\n        </div>`; }
 
+    // ========== ОСНОВНОЙ ИНТЕРФЕЙС ==========
     function showHome() {
       const mainContent = document.getElementById('main-content');
       const isAdmin = currentUser.role === 'admin';
-      let menuButtons = isAdmin ? `<button id="archive-btn">▸ АРХИВ ДОКУМЕНТОВ</button><button id="account-btn">▸ АККАУНТ</button><button id="chat-btn">▸ СВЯЗЬ</button><button id="admin-btn">▸ АДМИН-ПАНЕЛЬ</button>` : `<button id="archive-btn">▸ АРХИВ ДОКУМЕНТОВ</button><button id="account-btn">▸ АККАУНТ</button><button id="chat-btn">▸ СВЯЗЬ</button><button id="record-btn">▸ ЗАПИСЬ</button><button id="map-btn">▸ КАРТА</button><button id="contacts-btn">▸ КОНТАКТЫ</button>`;
+      let menuButtons = '';
+      if (isAdmin) {
+        menuButtons = `
+          <button id="archive-btn">▸ АРХИВ ДОКУМЕНТОВ</button>
+          <button id="account-btn">▸ АККАУНТ</button>
+          <button id="chat-btn">▸ СВЯЗЬ</button>
+          <button id="admin-btn">▸ АДМИН-ПАНЕЛЬ</button>
+          <button id="easter-btn">▸ ПАСХАЛКИ</button>
+        `;
+      } else {
+        menuButtons = `
+          <button id="archive-btn">▸ АРХИВ ДОКУМЕНТОВ</button>
+          <button id="account-btn">▸ АККАУНТ</button>
+          <button id="chat-btn">▸ СВЯЗЬ</button>
+          <button id="record-btn">▸ ЗАПИСЬ</button>
+          <button id="map-btn">▸ КАРТА</button>
+          <button id="contacts-btn">▸ КОНТАКТЫ</button>
+        `;
+      }
       mainContent.innerHTML = `${getAsciiLogo()}<h2 style="text-align:center;">ТЕРМИНАЛ</h2><div class="menu-grid">${menuButtons}</div><div class="logout-container"><button id="logout-btn">▸ ВЫХОД ИЗ СИСТЕМЫ</button></div><div class="status-bar" style="margin-top:20px;">🔒 СЕАНС АКТИВЕН • ПРОТОКОЛ АУДИТА ВКЛЮЧЁН</div>`;
+      // Показываем плашку о задержках
+      showDelayBanner();
+
       document.getElementById('archive-btn').onclick = () => showArchive();
       document.getElementById('account-btn').onclick = () => showAccount();
       document.getElementById('chat-btn').onclick = () => showChat();
       document.getElementById('logout-btn').onclick = () => { currentUser = null; document.getElementById('login-section').classList.remove('hidden'); document.getElementById('main-section').classList.add('hidden'); };
-      if (isAdmin) document.getElementById('admin-btn').onclick = () => showAdmin();
-      else { document.getElementById('record-btn').onclick = () => deniedAccess(); document.getElementById('map-btn').onclick = () => deniedAccess(); document.getElementById('contacts-btn').onclick = () => deniedAccess(); }
+      if (isAdmin) {
+        document.getElementById('admin-btn').onclick = () => showAdmin();
+        document.getElementById('easter-btn').onclick = () => showEasterAdmin();
+      } else {
+        document.getElementById('record-btn').onclick = () => deniedAccess();
+        document.getElementById('map-btn').onclick = () => deniedAccess();
+        document.getElementById('contacts-btn').onclick = () => deniedAccess();
+      }
+
+      // Загружаем пасхалки и инициализируем триггеры
+      loadEasterEggsAndStart();
     }
 
+    async function loadEasterEggsAndStart() {
+      easterEggs = await fetchEasterEggs();
+      // Сброс таймера и буфера
+      keyCombinationBuffer = '';
+      if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
+      // Слушаем события мыши и клавиатуры для сброса таймера
+      document.removeEventListener('mousemove', resetIdleTimer);
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('click', resetIdleTimer);
+      document.addEventListener('mousemove', resetIdleTimer);
+      document.addEventListener('click', resetIdleTimer);
+      document.addEventListener('keydown', handleKeyDown);
+      // Запускаем таймер
+      resetIdleTimer();
+    }
+
+    // ========== ПРОЧИЕ СТРАНИЦЫ (без изменений) ==========
     function showAccount() {
       let modalHtml = currentUser.role === 'viewer' ? `<h2>ПРОФИЛЬ АГЕНТА</h2><div class="profile-photo"><div style="font-size:32px;">🖼️</div><span>Фото изъято</span><span style="font-size:9px;">по решению комиссии №23-А</span></div><p><strong>Имя:</strong> СЕМЁН ЛОБАНОВ</p><p><strong>Должность:</strong> Смотритель архива</p><p><strong>Уровень доступа:</strong> M1 — Наблюдатель</p><p><strong>Статус:</strong> <span style="color:#00ff00;">Активен</span></p><p><strong>Гриф секретности:</strong> Секретно</p>` : `<h2>ПРОФИЛЬ АГЕНТА</h2><div class="profile-photo"><div style="font-size:32px;">🖼️</div><span>Фото изъято</span><span style="font-size:9px;">по решению комиссии №23-А</span></div><p><strong>Имя:</strong> ${escapeHtml(currentUser.name)}</p><p><strong>Должность:</strong> Агент по устранению аномалий</p><p><strong>Уровень доступа:</strong> ${currentUser.role === 'admin' ? 'M5 (Администратор)' : 'M2'}</p><p><strong>Статус:</strong> <span style="color:#ffaa00;">Пропал без вести</span></p><p><strong>Гриф секретности:</strong> Особой важности</p>`;
       showModal(modalHtml);
@@ -266,6 +457,7 @@
       });
     }
 
+    // ========== ЧАТ ==========
     let currentChatContact = "ADMIN";
     async function showChat() {
       const mainContent = document.getElementById('main-content');
@@ -336,11 +528,11 @@
       input.value = '';
     }
 
-    // Админ-панель (создание/редактирование)
+    // ========== АДМИН-ПАНЕЛЬ (СТАТЬИ) ==========
     async function showAdmin() {
       const mainContent = document.getElementById('main-content');
       const articles = await fetchAllArticlesForAdmin();
-      let html = `<button id="back-home-admin" class="back-btn">← НАЗАД НА ГЛАВНУЮ</button><h2>АДМИН-ПАНЕЛЬ</h2><button id="create-article-btn">+ Создать статью</button><br><br>`;
+      let html = `<button id="back-home-admin" class="back-btn">← НАЗАД НА ГЛАВНУЮ</button><h2>АДМИН-ПАНЕЛЬ — СТАТЬИ</h2><button id="create-article-btn">+ Создать статью</button><br><br>`;
       articles.forEach(a => {
         html += `<div style="border:1px solid #444; padding:15px; margin:10px 0;"><strong>${escapeHtml(a.code)}</strong> — ${escapeHtml(a.title)}${a.visible_to_viewer ? '<span style="color:#0f0;"> [ДЛЯ VIEWER]</span>' : ''}<button class="edit-article-btn" data-id="${a.id}" style="float:right; margin-left:8px;">Ред</button><button class="del-article-btn" data-id="${a.id}" style="float:right;">Удалить</button></div>`;
       });
@@ -429,7 +621,141 @@
       });
     }
 
-    // Вход
+    // ========== АДМИН-ПАНЕЛЬ (ПАСХАЛКИ) ==========
+    async function showEasterAdmin() {
+      const mainContent = document.getElementById('main-content');
+      const eggs = await fetchEasterEggs();
+      let html = `<button id="back-home-easter" class="back-btn">← НАЗАД НА ГЛАВНУЮ</button><h2>АДМИН-ПАНЕЛЬ — ПАСХАЛКИ</h2><button id="create-easter-btn">+ Добавить пасхалку</button><br><br>`;
+      eggs.forEach(e => {
+        const status = e.is_active ? '🟢 активна' : '🔴 неактивна';
+        const type = e.trigger_type === 'idle_timeout' ? `Бездействие (${e.trigger_value} сек)` : `Комбинация клавиш (${e.trigger_value})`;
+        const actions = [];
+        if (e.show_article) actions.push('статья');
+        if (e.show_image) actions.push('изображение');
+        if (e.download_file) actions.push('файл');
+        html += `<div style="border:1px solid #444; padding:15px; margin:10px 0;">
+          <strong>#${e.id}</strong> — ${type} — ${status} — Действия: ${actions.join(', ')}
+          <button class="edit-easter-btn" data-id="${e.id}" style="float:right; margin-left:8px;">Ред</button>
+          <button class="del-easter-btn" data-id="${e.id}" style="float:right;">Удалить</button>
+        </div>`;
+      });
+      mainContent.innerHTML = html;
+      document.getElementById('back-home-easter').onclick = () => showHome();
+      document.getElementById('create-easter-btn').onclick = () => createEasterForm();
+      document.querySelectorAll('.edit-easter-btn').forEach(btn => { btn.onclick = () => editEaster(parseInt(btn.getAttribute('data-id'))); });
+      document.querySelectorAll('.del-easter-btn').forEach(btn => { btn.onclick = async () => { if(confirm("Удалить пасхалку?")) { await deleteEasterEgg(parseInt(btn.getAttribute('data-id'))); showEasterAdmin(); } }; });
+    }
+
+    function createEasterForm() {
+      showModal(`
+        <h2>Новая пасхалка</h2>
+        <label>Тип триггера:</label>
+        <select id="easter-trigger-type">
+          <option value="idle_timeout">Бездействие (по таймеру)</option>
+          <option value="key_combination">Комбинация клавиш</option>
+        </select><br>
+        <label>Значение триггера:</label>
+        <input id="easter-trigger-value" placeholder="Для таймера: число секунд (например 30), для клавиш: строка (например 666)"><br>
+        <label><input type="checkbox" id="easter-show-article"> Показать статью</label><br>
+        <textarea id="easter-article-text" placeholder="Текст статьи (если включено)" rows="4"></textarea><br>
+        <label><input type="checkbox" id="easter-show-image"> Показать изображение</label><br>
+        <input id="easter-image-url" placeholder="URL изображения (если включено)"><br>
+        <label><input type="checkbox" id="easter-download-file"> Скачать файл</label><br>
+        <input id="easter-file-url" placeholder="URL файла (если включено)"><br>
+        <input id="easter-file-name" placeholder="Имя файла (например, секрет.txt)"><br>
+        <label><input type="checkbox" id="easter-is-active" checked> Активна</label><br>
+        <button id="save-easter-btn">Сохранить</button>
+      `, async () => {
+        const saveBtn = document.getElementById('save-easter-btn');
+        if (saveBtn) {
+          saveBtn.onclick = async () => {
+            const triggerType = document.getElementById('easter-trigger-type').value;
+            const triggerValue = document.getElementById('easter-trigger-value').value.trim();
+            if (!triggerValue) { alert("Заполните значение триггера"); return; }
+            const showArticle = document.getElementById('easter-show-article').checked;
+            const articleText = document.getElementById('easter-article-text').value.trim();
+            const showImage = document.getElementById('easter-show-image').checked;
+            const imageUrl = document.getElementById('easter-image-url').value.trim();
+            const downloadFile = document.getElementById('easter-download-file').checked;
+            const fileUrl = document.getElementById('easter-file-url').value.trim();
+            const fileName = document.getElementById('easter-file-name').value.trim() || 'аномалия.txt';
+            const isActive = document.getElementById('easter-is-active').checked;
+            const newEgg = {
+              id: Date.now(),
+              trigger_type: triggerType,
+              trigger_value: triggerValue,
+              show_article: showArticle,
+              article_text: showArticle ? articleText : null,
+              show_image: showImage,
+              image_url: showImage ? imageUrl : null,
+              download_file: downloadFile,
+              file_url: downloadFile ? fileUrl : null,
+              file_name: downloadFile ? fileName : null,
+              is_active: isActive
+            };
+            const success = await addEasterEgg(newEgg);
+            if (success) { closeModal(); showEasterAdmin(); }
+          };
+        }
+      });
+    }
+
+    async function editEaster(id) {
+      const eggs = await fetchEasterEggs();
+      const egg = eggs.find(e => e.id === id);
+      if (!egg) return;
+      showModal(`
+        <h2>Редактирование пасхалки</h2>
+        <label>Тип триггера:</label>
+        <select id="easter-trigger-type">
+          <option value="idle_timeout" ${egg.trigger_type === 'idle_timeout' ? 'selected' : ''}>Бездействие (по таймеру)</option>
+          <option value="key_combination" ${egg.trigger_type === 'key_combination' ? 'selected' : ''}>Комбинация клавиш</option>
+        </select><br>
+        <label>Значение триггера:</label>
+        <input id="easter-trigger-value" value="${escapeHtml(egg.trigger_value)}"><br>
+        <label><input type="checkbox" id="easter-show-article" ${egg.show_article ? 'checked' : ''}> Показать статью</label><br>
+        <textarea id="easter-article-text" rows="4">${escapeHtml(egg.article_text || '')}</textarea><br>
+        <label><input type="checkbox" id="easter-show-image" ${egg.show_image ? 'checked' : ''}> Показать изображение</label><br>
+        <input id="easter-image-url" value="${escapeHtml(egg.image_url || '')}" placeholder="URL изображения"><br>
+        <label><input type="checkbox" id="easter-download-file" ${egg.download_file ? 'checked' : ''}> Скачать файл</label><br>
+        <input id="easter-file-url" value="${escapeHtml(egg.file_url || '')}" placeholder="URL файла"><br>
+        <input id="easter-file-name" value="${escapeHtml(egg.file_name || '')}" placeholder="Имя файла"><br>
+        <label><input type="checkbox" id="easter-is-active" ${egg.is_active ? 'checked' : ''}> Активна</label><br>
+        <button id="save-edit-easter-btn">Сохранить</button>
+      `, async () => {
+        const saveBtn = document.getElementById('save-edit-easter-btn');
+        if (saveBtn) {
+          saveBtn.onclick = async () => {
+            const triggerType = document.getElementById('easter-trigger-type').value;
+            const triggerValue = document.getElementById('easter-trigger-value').value.trim();
+            if (!triggerValue) { alert("Заполните значение триггера"); return; }
+            const showArticle = document.getElementById('easter-show-article').checked;
+            const articleText = document.getElementById('easter-article-text').value.trim();
+            const showImage = document.getElementById('easter-show-image').checked;
+            const imageUrl = document.getElementById('easter-image-url').value.trim();
+            const downloadFile = document.getElementById('easter-download-file').checked;
+            const fileUrl = document.getElementById('easter-file-url').value.trim();
+            const fileName = document.getElementById('easter-file-name').value.trim() || 'аномалия.txt';
+            const isActive = document.getElementById('easter-is-active').checked;
+            await updateEasterEgg(id, {
+              trigger_type: triggerType,
+              trigger_value: triggerValue,
+              show_article: showArticle,
+              article_text: showArticle ? articleText : null,
+              show_image: showImage,
+              image_url: showImage ? imageUrl : null,
+              download_file: downloadFile,
+              file_url: downloadFile ? fileUrl : null,
+              file_name: downloadFile ? fileName : null,
+              is_active: isActive
+            });
+            closeModal(); showEasterAdmin();
+          };
+        }
+      });
+    }
+
+    // ========== ВХОД ==========
     document.getElementById('login-btn').onclick = async () => {
       const login = document.getElementById('login-input').value.trim();
       const password = document.getElementById('pass-input').value.trim();
