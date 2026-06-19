@@ -143,7 +143,7 @@
     }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
     function showFullImage(src, onCloseCallback) {
-      showModal(`<div class="full-image-modal"><img src="${escapeHtml(src)}" style="max-width:100%; max-height:80vh; border:2px solid var(--accent); background:#000;"></div>`, null, () => { if (onCloseCallback) onCloseCallback(); });
+      showModal(`<div class="full-image-modal"><img src="${escapeHtml(src)}" style="max-width:100%; max-height:80vh; border:2px solid var(--accent); background:#000;" alt="Изображение"></div>`, null, () => { if (onCloseCallback) onCloseCallback(); });
     }
     function showLoading(callback, looped = false) {
       const overlay = document.createElement('div');
@@ -284,6 +284,7 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
         const link = document.createElement('a');
         link.href = egg.file_url;
         link.download = egg.file_name || 'аномалия.txt';
+        link.target = '_blank'; // чтобы не закрывалось вкладка, если ссылка не прямая
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -654,10 +655,10 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
         <label><input type="checkbox" id="easter-show-article"> Показать статью</label><br>
         <textarea id="easter-article-text" placeholder="Текст статьи (если включено)" rows="4"></textarea><br>
         <label><input type="checkbox" id="easter-show-image"> Показать изображение</label><br>
-        <input id="easter-image-url" placeholder="URL изображения (если включено)"><br>
+        <input id="easter-image-url" placeholder="ПРЯМАЯ ссылка на изображение (например, https://i.ibb.co/.../file.jpg)"><br>
         <label><input type="checkbox" id="easter-download-file"> Скачать файл</label><br>
-        <input id="easter-file-url" placeholder="URL файла (если включено)"><br>
-        <input id="easter-file-name" placeholder="Имя файла (например, секрет.txt)"><br>
+        <input id="easter-file-url" placeholder="ПРЯМАЯ ссылка на файл (например, https://files.catbox.moe/.../file.txt)"><br>
+        <input id="easter-file-name" placeholder="Имя файла при скачивании (например, секрет.txt)"><br>
         <label><input type="checkbox" id="easter-is-active" checked> Активна</label><br>
         <button id="save-easter-btn">Сохранить</button>
       `, async () => {
@@ -711,9 +712,9 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
         <label><input type="checkbox" id="easter-show-article" ${egg.show_article ? 'checked' : ''}> Показать статью</label><br>
         <textarea id="easter-article-text" rows="4">${escapeHtml(egg.article_text || '')}</textarea><br>
         <label><input type="checkbox" id="easter-show-image" ${egg.show_image ? 'checked' : ''}> Показать изображение</label><br>
-        <input id="easter-image-url" value="${escapeHtml(egg.image_url || '')}" placeholder="URL изображения"><br>
+        <input id="easter-image-url" value="${escapeHtml(egg.image_url || '')}" placeholder="Прямая ссылка на изображение"><br>
         <label><input type="checkbox" id="easter-download-file" ${egg.download_file ? 'checked' : ''}> Скачать файл</label><br>
-        <input id="easter-file-url" value="${escapeHtml(egg.file_url || '')}" placeholder="URL файла"><br>
+        <input id="easter-file-url" value="${escapeHtml(egg.file_url || '')}" placeholder="Прямая ссылка на файл"><br>
         <input id="easter-file-name" value="${escapeHtml(egg.file_name || '')}" placeholder="Имя файла"><br>
         <label><input type="checkbox" id="easter-is-active" ${egg.is_active ? 'checked' : ''}> Активна</label><br>
         <button id="save-edit-easter-btn">Сохранить</button>
