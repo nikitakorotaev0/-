@@ -7,7 +7,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <style>
-    /* (все стили без изменений, такие же как в v7.0.1) */
+    /* (все стили такие же, как в v7.0.2, без изменений) */
     :root { --bg: #0a0a0a; --accent: #00cc55; --gray: #bbbbbb; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: var(--bg); color: var(--gray); font-family: 'Courier New', monospace; overflow: hidden; height: 100vh; }
@@ -60,7 +60,7 @@
 <body>
 
 <div class="header">
-  <div><span class="accent">[BIAR]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v7.0.2</div>
+  <div><span class="accent">[BIAR]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v7.0.3</div>
   <div><span id="current-time"></span></div>
 </div>
 
@@ -192,15 +192,43 @@
     }
     async function deleteArticle(id) { await supabase.from('articles').delete().eq('id', id); }
 
-    // ========== РАБОТА С ПАСХАЛКАМИ ==========
+    // ========== РАБОТА С ПАСХАЛКАМИ (С ОБРАБОТКОЙ ОШИБКИ RLS) ==========
     async function fetchEasterEggs() {
       const { data, error } = await supabase.from('easter_eggs').select('*').order('id', { ascending: true });
-      if (error) { console.error(error); return []; }
+      if (error) {
+        console.error(error);
+        if (error.code === '42P01') {
+          showModal(`<h2>Таблица easter_eggs не найдена</h2><p>Выполните SQL в Supabase:</p><pre style="background:#000; color:#0f0; padding:10px;">CREATE TABLE easter_eggs (
+  id BIGINT PRIMARY KEY,
+  trigger_type TEXT NOT NULL,
+  trigger_value TEXT NOT NULL,
+  show_article BOOLEAN DEFAULT false,
+  article_text TEXT,
+  show_image BOOLEAN DEFAULT false,
+  image_url TEXT,
+  download_file BOOLEAN DEFAULT false,
+  file_url TEXT,
+  file_name TEXT,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
+        }
+        return [];
+      }
       return data;
     }
     async function addEasterEgg(egg) {
-      const { error } = await supabase.from('easter_eggs').insert(egg);
-      if (error) { console.error(error); showModal(`<h2>Ошибка сохранения пасхалки</h2><p>${escapeHtml(error.message)}</p>`); return false; }
+      const { data, error } = await supabase.from('easter_eggs').insert(egg).select();
+      if (error) {
+        console.error(error);
+        if (error.code === '42501' || error.message.includes('row-level security')) {
+          showModal(`<h2>Ошибка прав доступа</h2><p>Нужно отключить RLS для таблицы easter_eggs.</p><p>Выполните в SQL Editor Supabase:</p><pre style="background:#000; color:#0f0; padding:10px;">ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre><p>После этого повторите попытку.</p>`);
+        } else {
+          showModal(`<h2>Ошибка сохранения пасхалки</h2><p>${escapeHtml(error.message)}</p>`);
+        }
+        return false;
+      }
       return true;
     }
     async function updateEasterEgg(id, updates) {
@@ -742,9 +770,17 @@
             setTimeout(() => { if (loadingOverlay) hideLoading(loadingOverlay); document.getElementById('login-section').classList.add('hidden'); document.getElementById('main-section').classList.remove('hidden'); showHome(); }, 1000);
           } else { if (loadingOverlay) hideLoading(loadingOverlay); document.getElementById('login-section').classList.add('hidden'); document.getElementById('main-section').classList.remove('hidden'); showHome(); }
           return;
+        } else {
+          // Подсказка для игрока
+          if (login === "AT2167") {
+            alert("Неверный пароль для агента AT2167. Попробуйте: AAF2615w (все буквы заглавные, внимательно!)");
+          } else {
+            alert("Неверный код агента или пароль.");
+          }
         }
+      } else {
+        alert("Неверный код агента или пароль.");
       }
-      alert("НЕВЕРНЫЙ КОД АГЕНТА ИЛИ ПАРОЛЬ");
     };
 
     setInterval(() => { const el = document.getElementById('current-time'); if (el) el.textContent = new Date().toLocaleString('ru-RU'); }, 1000);
