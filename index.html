@@ -59,7 +59,7 @@
 <body>
 
 <div class="header">
-  <div><span class="accent">[BIAR]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v7.0.5</div>
+  <div><span class="accent">[BIAR]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v7.0.6</div>
   <div><span id="current-time"></span></div>
 </div>
 
@@ -274,21 +274,39 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
     function triggerEasterEgg(egg) {
       if (isEasterTriggered) return;
       isEasterTriggered = true;
+
+      // Собираем контент для одной модалки
+      let content = '';
       if (egg.show_article && egg.article_text) {
-        showModal(`<div style="background:#000; border:2px solid #ff0000; color:#ff4444; padding:20px; text-shadow:0 0 10px #ff0000;"><h2 style="color:#ff0000;">⚠️ ОБНАРУЖЕНА АНОМАЛИЯ</h2><p>${escapeHtml(egg.article_text).replace(/\n/g, '<br>')}</p></div>`);
+        content += `<div style="background:#000; border:2px solid #ff0000; color:#ff4444; padding:20px; text-shadow:0 0 10px #ff0000;">`;
+        content += `<h2 style="color:#ff0000;">⚠️ ОБНАРУЖЕНА АНОМАЛИЯ</h2>`;
+        content += `<p>${escapeHtml(egg.article_text).replace(/\n/g, '<br>')}</p>`;
+        content += `</div>`;
       }
       if (egg.show_image && egg.image_url) {
-        showFullImage(egg.image_url);
+        content += `<div style="text-align:center; margin-top:15px;"><img src="${escapeHtml(egg.image_url)}" style="max-width:100%; max-height:60vh; border:2px solid var(--accent); background:#000;" alt="Изображение"></div>`;
       }
+      // Если нет ни статьи, ни картинки, ничего не показываем
+      if (!content) {
+        console.warn("Пасхалка сработала, но нет контента для показа.");
+        isEasterTriggered = false;
+        return;
+      }
+      showModal(content);
+
+      // Скачивание файла (если включено)
       if (egg.download_file && egg.file_url) {
-        const link = document.createElement('a');
-        link.href = egg.file_url;
-        link.download = egg.file_name || 'аномалия.txt';
-        link.target = '_blank'; // чтобы не закрывалось вкладка, если ссылка не прямая
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        setTimeout(() => {
+          const link = document.createElement('a');
+          link.href = egg.file_url;
+          link.download = egg.file_name || 'аномалия.txt';
+          link.target = '_blank';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }, 500);
       }
+
       setTimeout(() => { isEasterTriggered = false; }, 5000);
     }
 
@@ -313,10 +331,14 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
       }
     }
 
-    // ========== ПЛАШКА О ЗАДЕРЖКАХ (встроена в showHome) ==========
+    // ========== ПЛАШКА О ЗАДЕРЖКАХ ==========
     function showDelayBanner() {
       const mainContent = document.getElementById('main-content');
-      if (sessionStorage.getItem('delay_banner_hidden')) return;
+      if (sessionStorage.getItem('delay_banner_hidden')) {
+        console.log("Плашка скрыта в этой сессии (sessionStorage)");
+        return;
+      }
+      console.log("Показываем плашку о задержках");
       const banner = document.createElement('div');
       banner.className = 'delay-banner';
       banner.innerHTML = `
@@ -327,6 +349,7 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
       document.getElementById('hide-banner-btn').onclick = () => {
         banner.remove();
         sessionStorage.setItem('delay_banner_hidden', 'true');
+        console.log("Плашка скрыта пользователем");
       };
     }
 
@@ -358,7 +381,7 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
       }
       mainContent.innerHTML = `${getAsciiLogo()}<h2 style="text-align:center;">ТЕРМИНАЛ</h2><div class="menu-grid">${menuButtons}</div><div class="logout-container"><button id="logout-btn">▸ ВЫХОД ИЗ СИСТЕМЫ</button></div><div class="status-bar" style="margin-top:20px;">🔒 СЕАНС АКТИВЕН • ПРОТОКОЛ АУДИТА ВКЛЮЧЁН</div>`;
       
-      // Показываем плашку о задержках (один раз за сессию)
+      // Показываем плашку о задержках
       showDelayBanner();
 
       document.getElementById('archive-btn').onclick = () => showArchive();
@@ -655,9 +678,9 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
         <label><input type="checkbox" id="easter-show-article"> Показать статью</label><br>
         <textarea id="easter-article-text" placeholder="Текст статьи (если включено)" rows="4"></textarea><br>
         <label><input type="checkbox" id="easter-show-image"> Показать изображение</label><br>
-        <input id="easter-image-url" placeholder="ПРЯМАЯ ссылка на изображение (например, https://i.ibb.co/.../file.jpg)"><br>
+        <input id="easter-image-url" placeholder="Прямая ссылка на изображение (напр. https://i.ibb.co/.../file.jpg)"><br>
         <label><input type="checkbox" id="easter-download-file"> Скачать файл</label><br>
-        <input id="easter-file-url" placeholder="ПРЯМАЯ ссылка на файл (например, https://files.catbox.moe/.../file.txt)"><br>
+        <input id="easter-file-url" placeholder="Прямая ссылка на файл (напр. https://files.catbox.moe/.../file.txt)"><br>
         <input id="easter-file-name" placeholder="Имя файла при скачивании (например, секрет.txt)"><br>
         <label><input type="checkbox" id="easter-is-active" checked> Активна</label><br>
         <button id="save-easter-btn">Сохранить</button>
