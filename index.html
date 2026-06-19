@@ -54,12 +54,115 @@
     .delay-banner { background: #1a1a1a; border: 1px solid var(--accent); color: var(--accent); padding: 10px 15px; margin: 10px 0; display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
     .delay-banner button { background: transparent; border: 1px solid var(--accent); color: var(--accent); padding: 4px 12px; cursor: pointer; font-size: 12px; }
     .delay-banner button:hover { background: var(--accent); color: #000; }
+
+    /* ===== Стили для Кегфа ===== */
+    #kegf-container {
+      position: fixed;
+      bottom: 25px;
+      right: 25px;
+      z-index: 999;
+      display: none; /* по умолчанию скрыт, показываем только для игрока */
+      flex-direction: column;
+      align-items: flex-end;
+      pointer-events: auto;
+    }
+    #kegf-bubbles-wrapper {
+      position: relative;
+      width: 0;
+      height: 0;
+      pointer-events: none;
+    }
+    #kegf-bubbles-wrapper > .kegf-bubble {
+      pointer-events: auto;
+    }
+    @keyframes kegfFloat {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-6px); }
+      100% { transform: translateY(0px); }
+    }
+    #kegf-image {
+      width: 80px;
+      height: auto;
+      transition: transform 0.2s;
+      filter: drop-shadow(0 0 10px rgba(0,200,80,0.4));
+      animation: kegfFloat 3s ease-in-out infinite;
+      margin-top: 10px;
+      z-index: 10000;
+      position: relative;
+      pointer-events: auto;
+      cursor: pointer;
+    }
+    #kegf-image:hover {
+      animation-play-state: paused;
+      transform: scale(1.08);
+    }
+    .kegf-bubble {
+      background: #1a1a1a;
+      border: 1px solid var(--accent, #00cc55);
+      color: var(--gray, #bbbbbb);
+      padding: 14px 18px;
+      max-width: 300px;
+      border-radius: 4px;
+      font-size: 13px;
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      box-shadow: 0 0 20px rgba(0,200,80,0.3);
+      font-family: 'Courier New', monospace;
+      line-height: 1.5;
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+      animation: bubbleAppear 0.3s ease forwards;
+      pointer-events: auto;
+      will-change: transform, opacity;
+      margin: 0;
+      transition: transform 0.2s;
+    }
+    @keyframes bubbleAppear {
+      0% { opacity: 0; transform: translateY(30px) scale(0.9); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .kegf-bubble-ascii {
+      max-width: 400px;
+      padding: 20px;
+      font-size: 11px;
+      line-height: 1.2;
+      background: #000;
+      border-color: var(--accent);
+    }
+    .kegf-bubble-ascii pre {
+      margin: 0;
+      white-space: pre;
+      font-family: 'Courier New', monospace;
+      color: var(--accent);
+    }
+    .kegf-bubble-close {
+      background: none;
+      border: none;
+      color: var(--accent, #00cc55);
+      position: absolute;
+      top: 4px;
+      right: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .kegf-bubble-close:hover {
+      color: #fff;
+    }
+    @media (max-width: 600px) {
+      #kegf-image { width: 60px; }
+      .kegf-bubble { max-width: 200px; font-size: 11px; padding: 10px 12px; }
+      .kegf-bubble-ascii { max-width: 280px; font-size: 8px; padding: 12px; }
+    }
+    /* Модалка ошибки Supabase – особый стиль */
+    .error-modal h2 { color: #ff4444; }
+    .error-modal .contact { color: var(--accent); text-decoration: underline; cursor: pointer; }
   </style>
 </head>
 <body>
 
 <div class="header">
-  <div><span class="accent">[BIAR]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v7.0.6</div>
+  <div><span class="accent">[BIAR]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v8.0</div>
   <div><span id="current-time"></span></div>
 </div>
 
@@ -83,6 +186,12 @@
 
 <div id="modal" class="modal"><div class="modal-content" id="modal-content"></div></div>
 <div id="security-footer" class="security-ticker">СЕТЬ ШИФРУЕТСЯ • AES-256 • ЗАЩИЩЁННЫЙ СЕРВЕР</div>
+
+<!-- КОНТЕЙНЕР КЕГФА (будет показан только для игрока) -->
+<div id="kegf-container">
+  <div id="kegf-bubbles-wrapper"></div>
+  <img id="kegf-image" src="https://xfyppmvvobskdmksqnir.supabase.co/storage/v1/object/public/article-images/KEGF.png" alt="Kegf">
+</div>
 
 <script>
   (function() {
@@ -109,8 +218,80 @@
     const SUPABASE_ANON_KEY = "sb_publishable_MoW2nFpIaGZIQwEsKjQubw_T0ko9O7q";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     let currentUser = null;
+    let isSupabaseDown = false; // флаг, что Supabase недоступен
 
-    // ========== БАЗОВЫЕ ФУНКЦИИ ==========
+    // ========== ФУНКЦИЯ ДЛЯ ОБРАБОТКИ ОШИБОК СУПАБЕЙС ==========
+    function handleSupabaseError(error, customMsg = null) {
+      if (!error) return false;
+      const msg = error.message || String(error);
+      // Если ошибка сети или DNS — считаем Supabase недоступным
+      if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('ERR_NAME_NOT_RESOLVED') || msg.includes('net::ERR')) {
+        if (!isSupabaseDown) {
+          isSupabaseDown = true;
+          showSupabaseDownModal();
+        }
+        return true;
+      }
+      return false;
+    }
+
+    function showSupabaseDownModal() {
+      // Показываем специальную модалку, которая не закрывается на крестик (перекрывает всё)
+      const modal = document.getElementById('modal');
+      const modalContent = document.getElementById('modal-content');
+      modalContent.innerHTML = `
+        <div class="error-modal">
+          <h2 style="color:#ff4444;">⚠️ КРИТИЧЕСКАЯ ОШИБКА</h2>
+          <p style="font-size:18px; margin:20px 0;">Возникла ошибка неигрового характера.</p>
+          <p style="font-size:16px; margin:10px 0;">Прохождение ARG дальше невозможно.</p>
+          <p style="font-size:16px; margin:10px 0;">Обратитесь в Telegram: <span class="contact">@last_in_russia</span> как можно скорей.</p>
+          <p style="font-size:12px; margin-top:30px; color:#777;">Связь с сервером потеряна. Пожалуйста, попробуйте позже.</p>
+        </div>
+        <br>
+        <button id="supabase-error-close-btn" style="background:transparent; border:1px solid #ff4444; color:#ff4444; padding:8px 20px; cursor:pointer;">ПОНЯТНО</button>
+      `;
+      modal.style.display = 'flex';
+      // При закрытии ничего не делаем, просто убираем модалку, но флаг останется
+      document.getElementById('supabase-error-close-btn').onclick = function() {
+        modal.style.display = 'none';
+      };
+    }
+
+    // Проверка соединения с Supabase при входе
+    async function checkSupabaseConnection() {
+      try {
+        const { data, error } = await supabase.from('articles').select('count').limit(1);
+        if (error) {
+          handleSupabaseError(error);
+          return false;
+        }
+        return true;
+      } catch (e) {
+        handleSupabaseError(e);
+        return false;
+      }
+    }
+
+    // Обёртка для всех запросов, чтобы проверять флаг ошибки
+    async function safeQuery(queryFn) {
+      if (isSupabaseDown) {
+        showSupabaseDownModal();
+        return null;
+      }
+      try {
+        const result = await queryFn();
+        if (result && result.error) {
+          const isErr = handleSupabaseError(result.error);
+          if (isErr) return null;
+        }
+        return result;
+      } catch (e) {
+        handleSupabaseError(e);
+        return null;
+      }
+    }
+
+    // ========== БАЗОВЫЕ ФУНКЦИИ (с обёрткой) ==========
     const STORAGE_BUCKET = "article-images";
     async function uploadImages(files) {
       const uploadedUrls = [];
@@ -157,8 +338,9 @@
     function hideLoading(overlay) { if (overlay && overlay.remove) overlay.remove(); }
     function deniedAccess() { showModal(`<h2>ДОСТУП ОТКЛОНЁН</h2><p>Недостаточный уровень доступа.</p>`); }
 
-    // ========== РАБОТА СО СТАТЬЯМИ ==========
+    // ========== РАБОТА СО СТАТЬЯМИ (с проверкой ошибок) ==========
     async function fetchArticlesForRole() {
+      if (isSupabaseDown) { showSupabaseDownModal(); return []; }
       let query = supabase.from('articles').select('*');
       if (currentUser.role === 'player') {
         query = query.or('visible_to_viewer.eq.false,visible_to_viewer.is.null');
@@ -166,29 +348,37 @@
         query = query.eq('visible_to_viewer', true);
       }
       const { data, error } = await query.order('id', { ascending: false });
-      if (error) { console.error(error); showModal(`<h2>Ошибка</h2><p>${escapeHtml(error.message)}</p>`); return []; }
+      if (error) { handleSupabaseError(error); return []; }
       return data;
     }
     async function fetchAllArticlesForAdmin() {
+      if (isSupabaseDown) { showSupabaseDownModal(); return []; }
       const { data, error } = await supabase.from('articles').select('*').order('id', { ascending: false });
-      if (error) { console.error(error); return []; }
+      if (error) { handleSupabaseError(error); return []; }
       return data;
     }
     async function addArticle(article) {
+      if (isSupabaseDown) { showSupabaseDownModal(); return false; }
       const toInsert = { ...article, visible_to_viewer: !!article.visible_to_viewer };
       const { error } = await supabase.from('articles').insert(toInsert);
-      if (error) { console.error(error); showModal(`<h2>Ошибка сохранения</h2><p>${escapeHtml(error.message)}</p>`); return false; }
+      if (error) { handleSupabaseError(error); showModal(`<h2>Ошибка сохранения</h2><p>${escapeHtml(error.message)}</p>`); return false; }
       return true;
     }
     async function updateArticle(id, updates) {
+      if (isSupabaseDown) { showSupabaseDownModal(); return; }
       const toUpdate = { ...updates, visible_to_viewer: !!updates.visible_to_viewer };
       const { error } = await supabase.from('articles').update(toUpdate).eq('id', id);
-      if (error) console.error(error);
+      if (error) handleSupabaseError(error);
     }
-    async function deleteArticle(id) { await supabase.from('articles').delete().eq('id', id); }
+    async function deleteArticle(id) {
+      if (isSupabaseDown) { showSupabaseDownModal(); return; }
+      const { error } = await supabase.from('articles').delete().eq('id', id);
+      if (error) handleSupabaseError(error);
+    }
 
     // ========== РАБОТА С ПАСХАЛКАМИ ==========
     async function fetchEasterEggs() {
+      if (isSupabaseDown) { showSupabaseDownModal(); return []; }
       const { data, error } = await supabase.from('easter_eggs').select('*').order('id', { ascending: true });
       if (error) {
         console.error(error);
@@ -214,6 +404,7 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
       return data;
     }
     async function addEasterEgg(egg) {
+      if (isSupabaseDown) { showSupabaseDownModal(); return false; }
       const { data, error } = await supabase.from('easter_eggs').insert(egg).select();
       if (error) {
         console.error(error);
@@ -227,19 +418,30 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
       return true;
     }
     async function updateEasterEgg(id, updates) {
+      if (isSupabaseDown) { showSupabaseDownModal(); return; }
       const { error } = await supabase.from('easter_eggs').update(updates).eq('id', id);
       if (error) console.error(error);
     }
-    async function deleteEasterEgg(id) { await supabase.from('easter_eggs').delete().eq('id', id); }
+    async function deleteEasterEgg(id) {
+      if (isSupabaseDown) { showSupabaseDownModal(); return; }
+      await supabase.from('easter_eggs').delete().eq('id', id);
+    }
 
     // ========== РАБОТА С СООБЩЕНИЯМИ ЧАТА ==========
     async function fetchMessagesForAdminPlayer(contact) {
+      if (isSupabaseDown) { showSupabaseDownModal(); return []; }
       const { data, error } = await supabase.from('messages').select('*').eq('contact', contact).order('id', { ascending: true });
-      if (error) return [];
+      if (error) { handleSupabaseError(error); return []; }
       return data;
     }
-    async function sendMessageToDB(contact, from, text) { await supabase.from('messages').insert({ id: Date.now(), contact, from_sender: from, text, time: '' }); }
-    async function deleteMessageFromDB(id) { await supabase.from('messages').delete().eq('id', id); }
+    async function sendMessageToDB(contact, from, text) {
+      if (isSupabaseDown) { showSupabaseDownModal(); return; }
+      await supabase.from('messages').insert({ id: Date.now(), contact, from_sender: from, text, time: '' });
+    }
+    async function deleteMessageFromDB(id) {
+      if (isSupabaseDown) { showSupabaseDownModal(); return; }
+      await supabase.from('messages').delete().eq('id', id);
+    }
     function getViewerChatMessages(contact) {
       if (contact === 'ADMIN') return [
         { from_sender: "ADMIN", text: "Смотритель, проверьте архивные записи по аномалии ЕК-12.", class: "admin" },
@@ -275,7 +477,6 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
       if (isEasterTriggered) return;
       isEasterTriggered = true;
 
-      // Собираем контент для одной модалки
       let content = '';
       if (egg.show_article && egg.article_text) {
         content += `<div style="background:#000; border:2px solid #ff0000; color:#ff4444; padding:20px; text-shadow:0 0 10px #ff0000;">`;
@@ -286,7 +487,6 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
       if (egg.show_image && egg.image_url) {
         content += `<div style="text-align:center; margin-top:15px;"><img src="${escapeHtml(egg.image_url)}" style="max-width:100%; max-height:60vh; border:2px solid var(--accent); background:#000;" alt="Изображение"></div>`;
       }
-      // Если нет ни статьи, ни картинки, ничего не показываем
       if (!content) {
         console.warn("Пасхалка сработала, но нет контента для показа.");
         isEasterTriggered = false;
@@ -294,7 +494,6 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
       }
       showModal(content);
 
-      // Скачивание файла (если включено)
       if (egg.download_file && egg.file_url) {
         setTimeout(() => {
           const link = document.createElement('a');
@@ -358,6 +557,13 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
 
     // ========== ОСНОВНОЙ ИНТЕРФЕЙС ==========
     function showHome() {
+      if (isSupabaseDown) {
+        showSupabaseDownModal();
+        // Не показываем меню
+        const mainContent = document.getElementById('main-content');
+        mainContent.innerHTML = `<div style="text-align:center; margin-top:50px; color:#ff4444;"><h2>⚠️ СЕРВЕР НЕДОСТУПЕН</h2><p>Пожалуйста, обратитесь в Telegram @last_in_russia</p></div>`;
+        return;
+      }
       const mainContent = document.getElementById('main-content');
       const isAdmin = currentUser.role === 'admin';
       let menuButtons = '';
@@ -381,7 +587,6 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
       }
       mainContent.innerHTML = `${getAsciiLogo()}<h2 style="text-align:center;">ТЕРМИНАЛ</h2><div class="menu-grid">${menuButtons}</div><div class="logout-container"><button id="logout-btn">▸ ВЫХОД ИЗ СИСТЕМЫ</button></div><div class="status-bar" style="margin-top:20px;">🔒 СЕАНС АКТИВЕН • ПРОТОКОЛ АУДИТА ВКЛЮЧЁН</div>`;
       
-      // Показываем плашку о задержках
       showDelayBanner();
 
       document.getElementById('archive-btn').onclick = () => showArchive();
@@ -420,11 +625,13 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
     }
 
     async function showArchive() {
+      if (isSupabaseDown) { showSupabaseDownModal(); return; }
       const mainContent = document.getElementById('main-content');
       if (currentUser.role === 'viewer') {
         mainContent.innerHTML = `<button id="back-home" class="back-btn">← НАЗАД НА ГЛАВНУЮ</button><h2>ПОИСК В АРХИВЕ</h2><p style="margin:10px 0; color:var(--accent);">Введи код QQ-34 и нажми Начать Поиск</p><input type="text" id="search-code" placeholder="Введите код доступа"><br><button id="search-btn">НАЧАТЬ ПОИСК</button><div class="status-bar" style="margin-top:20px;">🔒 ДОКУМЕНТЫ ЗАШИФРОВАНЫ • ДОСТУП ПО КОДУ</div>`;
         document.getElementById('back-home').onclick = () => showHome();
         document.getElementById('search-btn').onclick = async () => {
+          if (isSupabaseDown) { showSupabaseDownModal(); return; }
           const code = document.getElementById('search-code').value.trim().toUpperCase();
           if (code !== "QQ-34") { showModal("КОД НЕ НАЙДЕН В АРХИВЕ"); return; }
           const { data } = await supabase.from('articles').select('*').eq('code', 'QQ-34');
@@ -437,6 +644,7 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
         mainContent.innerHTML = `<button id="back-home" class="back-btn">← НАЗАД НА ГЛАВНУЮ</button><h2>ПОИСК В АРХИВЕ</h2><input type="text" id="search-code" placeholder="Введите код доступа"><br><button id="search-btn">НАЧАТЬ ПОИСК</button>${currentUser.role === 'admin' ? `<br><br><h3>Всего статей: ${articles.length}</h3>` : ''}<div class="status-bar" style="margin-top:20px;">🔒 ДОКУМЕНТЫ ЗАШИФРОВАНЫ • ДОСТУП ПО КОДУ</div>`;
         document.getElementById('back-home').onclick = () => showHome();
         document.getElementById('search-btn').onclick = async () => {
+          if (isSupabaseDown) { showSupabaseDownModal(); return; }
           const code = document.getElementById('search-code').value.trim().toUpperCase();
           const article = articles.find(a => a.code.toUpperCase() === code);
           if (article) await showArticleModal(article);
@@ -479,6 +687,7 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
     // ========== ЧАТ ==========
     let currentChatContact = "ADMIN";
     async function showChat() {
+      if (isSupabaseDown) { showSupabaseDownModal(); return; }
       const mainContent = document.getElementById('main-content');
       const isViewer = currentUser.role === 'viewer';
       const isPlayer = currentUser.role === 'player';
@@ -496,6 +705,7 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
     }
 
     async function openChat(contact, isFirstLoad = false) {
+      if (isSupabaseDown) { showSupabaseDownModal(); return; }
       currentChatContact = contact;
       const adminDiv = document.getElementById('contact-admin');
       const siDiv = document.getElementById('contact-si');
@@ -512,6 +722,7 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
         staticMsgs.forEach(msg => { html += `<div class="message ${msg.class}"><strong>${escapeHtml(msg.from_sender)}:</strong> ${escapeHtml(msg.text)}</div>`; });
       } else {
         const msgs = await fetchMessagesForAdminPlayer(contact);
+        if (!msgs) return;
         msgs.forEach(msg => {
           const cls = msg.from_sender === "ADMIN" ? "admin" : msg.from_sender === "SI4015" ? "si" : "player";
           const delBtn = currentUser.role === 'admin' ? `<button class="delete-msg-btn" data-id="${msg.id}">✕</button>` : '';
@@ -537,6 +748,7 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
     }
 
     async function sendMessage() {
+      if (isSupabaseDown) { showSupabaseDownModal(); return; }
       const input = document.getElementById('chat-input');
       const text = input.value.trim();
       if (!text) return;
@@ -549,6 +761,7 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
 
     // ========== АДМИН-ПАНЕЛЬ (СТАТЬИ) ==========
     async function showAdmin() {
+      if (isSupabaseDown) { showSupabaseDownModal(); return; }
       const mainContent = document.getElementById('main-content');
       const articles = await fetchAllArticlesForAdmin();
       let html = `<button id="back-home-admin" class="back-btn">← НАЗАД НА ГЛАВНУЮ</button><h2>АДМИН-ПАНЕЛЬ — СТАТЬИ</h2><button id="create-article-btn">+ Создать статью</button><br><br>`;
@@ -580,6 +793,7 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
         });
         const saveBtn = document.getElementById('save-new-btn');
         if (saveBtn) saveBtn.onclick = async () => {
+          if (isSupabaseDown) { showSupabaseDownModal(); return; }
           const code = document.getElementById('new-code').value.trim();
           const title = document.getElementById('new-title').value.trim();
           const text = document.getElementById('new-text').value.trim();
@@ -601,6 +815,7 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
     }
 
     async function editArticle(id) {
+      if (isSupabaseDown) { showSupabaseDownModal(); return; }
       const articles = await fetchAllArticlesForAdmin();
       const a = articles.find(x => x.id === id);
       if (!a) return;
@@ -623,6 +838,7 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
         document.querySelectorAll('.remove-existing').forEach(btn => { btn.onclick = () => btn.parentElement.remove(); });
         const saveBtn = document.getElementById('save-edit-btn');
         if (saveBtn) saveBtn.onclick = async () => {
+          if (isSupabaseDown) { showSupabaseDownModal(); return; }
           const visibleToViewer = document.getElementById('edit-viewer-flag').checked;
           const remainingUrls = []; document.querySelectorAll('#current-images-list .image-preview-item img').forEach(img => remainingUrls.push(img.src));
           const files = fileInput.files;
@@ -642,6 +858,7 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
 
     // ========== АДМИН-ПАНЕЛЬ (ПАСХАЛКИ) ==========
     async function showEasterAdmin() {
+      if (isSupabaseDown) { showSupabaseDownModal(); return; }
       const mainContent = document.getElementById('main-content');
       const eggs = await fetchEasterEggs();
       let html = `<button id="back-home-easter" class="back-btn">← НАЗАД НА ГЛАВНУЮ</button><h2>АДМИН-ПАНЕЛЬ — ПАСХАЛКИ</h2><button id="create-easter-btn">+ Добавить пасхалку</button><br><br>`;
@@ -688,6 +905,7 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
         const saveBtn = document.getElementById('save-easter-btn');
         if (saveBtn) {
           saveBtn.onclick = async () => {
+            if (isSupabaseDown) { showSupabaseDownModal(); return; }
             const triggerType = document.getElementById('easter-trigger-type').value;
             const triggerValue = document.getElementById('easter-trigger-value').value.trim();
             if (!triggerValue) { alert("Заполните значение триггера"); return; }
@@ -720,6 +938,7 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
     }
 
     async function editEaster(id) {
+      if (isSupabaseDown) { showSupabaseDownModal(); return; }
       const eggs = await fetchEasterEggs();
       const egg = eggs.find(e => e.id === id);
       if (!egg) return;
@@ -745,6 +964,7 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
         const saveBtn = document.getElementById('save-edit-easter-btn');
         if (saveBtn) {
           saveBtn.onclick = async () => {
+            if (isSupabaseDown) { showSupabaseDownModal(); return; }
             const triggerType = document.getElementById('easter-trigger-type').value;
             const triggerValue = document.getElementById('easter-trigger-value').value.trim();
             if (!triggerValue) { alert("Заполните значение триггера"); return; }
@@ -783,11 +1003,36 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
         const enteredHash = CryptoJS.SHA256(password).toString();
         if (enteredHash === user.hash) {
           currentUser = { login, role: user.role, name: user.name };
+          // Проверяем соединение с Supabase
+          const isConnected = await checkSupabaseConnection();
+          if (!isConnected) {
+            // Ошибка уже показана, выходим
+            return;
+          }
+          // Показываем загрузку только для игрока и viewera
           let loadingOverlay = null;
           if (currentUser.role !== 'admin') loadingOverlay = showLoading(null, true);
           if (currentUser.role === 'player' || currentUser.role === 'viewer') {
-            setTimeout(() => { if (loadingOverlay) hideLoading(loadingOverlay); document.getElementById('login-section').classList.add('hidden'); document.getElementById('main-section').classList.remove('hidden'); showHome(); }, 1000);
-          } else { if (loadingOverlay) hideLoading(loadingOverlay); document.getElementById('login-section').classList.add('hidden'); document.getElementById('main-section').classList.remove('hidden'); showHome(); }
+            setTimeout(() => {
+              if (loadingOverlay) hideLoading(loadingOverlay);
+              document.getElementById('login-section').classList.add('hidden');
+              document.getElementById('main-section').classList.remove('hidden');
+              // Если игрок — показываем Кегфа
+              if (currentUser.role === 'player') {
+                document.getElementById('kegf-container').style.display = 'flex';
+                // Инициализируем Кегфа (он уже есть в глобальном скоупе, но можно вызвать init)
+                if (typeof initKegf === 'function') {
+                  initKegf();
+                }
+              }
+              showHome();
+            }, 1000);
+          } else {
+            if (loadingOverlay) hideLoading(loadingOverlay);
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('main-section').classList.remove('hidden');
+            showHome();
+          }
           return;
         } else {
           alert(`Неверный пароль.\nВведено: "${password}"\nПопробуйте пароль: AAF2615w (все заглавные, без пробелов)`);
@@ -801,6 +1046,213 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
     const tickerMessages = ["СЕТЬ ШИФРУЕТСЯ • AES-256", "ВНЕШНИЕ КАНАЛЫ ЗАБЛОКИРОВАНЫ", "КЛЮЧИ ОБНОВЛЕНЫ • ПРОТОКОЛ M-5", "ПОПЫТКА НЕСАНКЦИОНИРОВАННОГО ДОСТУПА", "СИСТЕМА АНТИ-ФИШИНГ АКТИВНА"];
     let idx = 0;
     setInterval(() => { const footer = document.getElementById('security-footer'); if (footer) footer.textContent = tickerMessages[idx % tickerMessages.length] + " • " + new Date().toLocaleTimeString(); idx++; }, 10000);
+
+    // ========== КЕГФ (только для игрока) ==========
+    // Все функции Кегфа вынесены в отдельный блок, но инициализируются только для player
+    // Определим функции для Кегфа
+    const KEGF_TIPS = [
+      { text: "Проверяйте правильность заполнения отчётов.", weight: 2 },
+      { text: "Если что-то нужно, я всегдапод рукой.", weight: 2 },
+      { text: "Некоторые статьи и файлы могут быть зашифрованы.", weight: 2 },
+      { text: "Каждый ваш вход в аккаунт отслеживается.", weight: 2 },
+      { text: "Kegf - ваш лучший друг в работе с терминалом.", weight: 2 },
+      { text: "Самый безопасный способ связи с коллегами-агентами - это наш защищённый чат.", weight: 2 },
+      { text: "Для более продуктивной работы всем агентам предоставлен доступ к архиву БИАР.", weight: 2 },
+      { text: "За распространение частной информации БИАР сегодня было ликвидировано - %error% агентов. Не будьте, как они!", weight: 2 },
+      { text: "Возможно я не набор единиц и нулей, а мозг в банке, подключённый к серверам, в наказание за то, что я слил данные на чёрный рынок.", weight: 1 },
+      { text: "Это очень полезное сообщение.", weight: 2 },
+      { text: "Желательно не пропускать мои подсказки.", weight: 2 },
+      { text: "АУДИО/ВИДЕО съёмка запрещены.", weight: 1 },
+      { text: "Я вам не мешаю?", weight: 1 },
+      { text: "Здесь кто-нибудь есть?", weight: 1 },
+      { text: "Иногда мне кажется, что я вижу сны.", weight: 1 },
+      { text: "Черный понедельник назван в честь Гоши Чёрного. Кек.", weight: 1 },
+      { text: "Некоторые весёлые вещи могут оказаться незаконными.", weight: 1 },
+      { text: "Для продолжения корректной работы сайта необходимо сделать сальто назад.", weight: 1 },
+      { text: "Меня создавали для помощи, но иногда я просто показываю красивые окна сбоку.", weight: 1 },
+      { text: "Терминал BIAR написан таким образом, что если удалить изображение кокоса где-то в корнях системы, то терминал безвозвратно будет уничтожен.", weight: 1.5 },
+      { text: "Официальное заявление совета директоров БИАР - БИАР никак не связана с убийством Бориса Немцова.", weight: 0.5 },
+      { text: "Иногда мне кажется, что я вижу сны.", weight: 0.5 },
+      { text: "Боюсь темноты.", weight: 0.8 },
+      { text: "Не думайте.", weight: 0.6 },
+      { text: "НА ВАШЕМ КОМПЬЮТЕРЕ ОБНАРУЖЕНЫ ВИРУСЫ! ТРЕБУЕТСЯ ПРОМЫТЬ МАТЕРИНСКУЮ ПЛАТУ В СТИРАЛЬНОЙ МАШИН!.", weight: 0.5 },
+      { text: "Если бы я не был языковой моделью, то я был бы ASCII художником.", weight: 0.6 },
+      { text: "Переключите раскладку на английский и на главном экране наберите code.", weight: 0.4 },
+      { text: "У нейросети не может политической идеологии, но чё-то не знаю.", weight: 0.8 },
+      { text: "Я забыл чё хотел написать.", weight: 0.8 },
+      { text: "Подождите на главном экране без действий 5 минут.", weight: 0.4 },
+      { text: "ASCII_ART", weight: 0.5 }
+    ];
+
+    const ASCII_ART = `
+               %###%###       
+       ################       
+       #####%####             
+       ###                    
+       %##%                   
+        ###  %########        
+        #######      ####     
+        %###            ###   
+        %%                ##  
+       %%%@    ########## %#% 
+       %% %  #% %####% %#  ## 
+       %% %% %#% ######    ## 
+       %%% %%             %#  
+        %%% %%%          %#%  
+         %%%% #%%%%@@  #%%    
+          %%%%%%%%%%%%%%      
+        %% %%                 
+       %%%%%%                 
+      %%%%%                   
+     %%%%%                    
+    %%%%%@                    
+   %%%%%                      
+  %%%%%                      
+    `;
+
+    let kegfImage = document.getElementById('kegf-image');
+    let kegfWrapper = document.getElementById('kegf-bubbles-wrapper');
+    let kegfEnabled = true;
+    let kegfMessageInterval = null;
+    let kegfBubbleTimeout = null;
+    let kegfHasGreeted = false;
+    let kegfBubbleCount = 0;
+
+    function getRandomTip() {
+      let totalWeight = 0;
+      for (let tip of KEGF_TIPS) totalWeight += tip.weight;
+      let random = Math.random() * totalWeight;
+      for (let tip of KEGF_TIPS) {
+        random -= tip.weight;
+        if (random <= 0) return tip.text;
+      }
+      return KEGF_TIPS[0].text;
+    }
+
+    function playSound() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        oscillator.type = 'sine';
+        oscillator.frequency.value = 880;
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        gainNode.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+        oscillator.start(audioCtx.currentTime);
+        oscillator.stop(audioCtx.currentTime + 0.15);
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+      } catch (e) { /* игнорируем */ }
+    }
+
+    function createKegfBubble(text, isAscii = false) {
+      if (!kegfEnabled) return;
+      const bubble = document.createElement('div');
+      bubble.className = 'kegf-bubble';
+      if (isAscii) {
+        bubble.classList.add('kegf-bubble-ascii');
+        const pre = document.createElement('pre');
+        pre.textContent = text;
+        bubble.appendChild(pre);
+      } else {
+        const span = document.createElement('span');
+        span.textContent = text;
+        bubble.appendChild(span);
+      }
+      const closeBtn = document.createElement('button');
+      closeBtn.className = 'kegf-bubble-close';
+      closeBtn.textContent = '✕';
+      closeBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        bubble.remove();
+      });
+      bubble.appendChild(closeBtn);
+
+      const rotation = (Math.random() * 6 - 3);
+      bubble.style.setProperty('--rot', rotation + 'deg');
+      bubble.style.transform = `rotate(${rotation}deg)`;
+
+      const allBubbles = kegfWrapper.querySelectorAll('.kegf-bubble');
+      allBubbles.forEach(b => {
+        const x = parseFloat(b.dataset.x) || 0;
+        const y = parseFloat(b.dataset.y) || 0;
+        const newX = x + 2;
+        const newY = y + 2;
+        b.dataset.x = newX;
+        b.dataset.y = newY;
+        b.style.transform = `translate(${newX}px, ${newY}px) rotate(${b.dataset.rot || '0deg'})`;
+      });
+
+      bubble.dataset.x = 0;
+      bubble.dataset.y = 0;
+      bubble.dataset.rot = rotation + 'deg';
+      bubble.style.zIndex = ++kegfBubbleCount;
+
+      kegfWrapper.appendChild(bubble);
+      playSound();
+    }
+
+    function showKegfGreeting() {
+      if (!kegfEnabled) return;
+      if (kegfHasGreeted) {
+        const tip = getRandomTip();
+        if (tip === "ASCII_ART") {
+          createKegfBubble(ASCII_ART, true);
+        } else {
+          createKegfBubble(tip);
+        }
+        return;
+      }
+      const greetingText = `👋 Привет!\nМеня зовут Kegf.\nЯ виртуальный помощник новеньким агентам в системе терминалов BIAR.`;
+      createKegfBubble(greetingText);
+      kegfHasGreeted = true;
+    }
+
+    if (kegfImage) {
+      kegfImage.addEventListener('click', function(e) {
+        e.stopPropagation();
+        showKegfGreeting();
+      });
+    }
+
+    function scheduleKegfMessage() {
+      if (kegfMessageInterval) {
+        clearTimeout(kegfMessageInterval);
+        kegfMessageInterval = null;
+      }
+      const delay = Math.floor(Math.random() * (60000 - 10000 + 1)) + 10000;
+      kegfMessageInterval = setTimeout(() => {
+        if (kegfEnabled && currentUser && currentUser.role === 'player') {
+          const tip = getRandomTip();
+          if (tip === "ASCII_ART") {
+            createKegfBubble(ASCII_ART, true);
+          } else {
+            createKegfBubble(tip);
+          }
+        }
+        scheduleKegfMessage();
+      }, delay);
+    }
+
+    function initKegf() {
+      // Убедимся, что Кегф включён только для игрока
+      if (!currentUser || currentUser.role !== 'player') {
+        document.getElementById('kegf-container').style.display = 'none';
+        return;
+      }
+      document.getElementById('kegf-container').style.display = 'flex';
+      kegfEnabled = true;
+      // Запускаем автоматические подсказки
+      scheduleKegfMessage();
+    }
+
+    // Экспортируем в глобальную область, чтобы можно было вызвать из showHome
+    window.initKegf = initKegf;
+    // Если игрок уже залогинен, Кегф инициализируется при входе, но на всякий случай
+    // проверяем, возможно, он уже есть.
+    // Если страница загружена и currentUser уже установлен (не admin), можно запустить Кегфа.
+    // Но мы его запускаем в обработчике входа, так что ок.
   })();
 </script>
 </body>
