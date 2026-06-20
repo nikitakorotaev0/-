@@ -74,7 +74,7 @@
 <body>
 
 <div class="header">
-  <div><span class="accent">[BIAR]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v9.0</div>
+  <div><span class="accent">[BIAR]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v9.1</div>
   <div><span id="current-time"></span></div>
 </div>
 
@@ -141,6 +141,15 @@
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     let currentUser = null;
     let isSupabaseDown = false;
+
+    // ========== КЕШ ДАННЫХ ==========
+    let cachedArticles = null; // { role: [articles], adminAll: [articles] }
+    let cachedEasterEggs = null;
+
+    function invalidateCache() {
+      cachedArticles = null;
+      cachedEasterEggs = null;
+    }
 
     function handleSupabaseError(error) {
       if (!error) return false;
@@ -249,9 +258,14 @@
     function hideLoading(overlay) { if (overlay && overlay.remove) overlay.remove(); }
     function deniedAccess() { showModal(`<h2>ДОСТУП ОТКЛОНЁН</h2><p>Недостаточный уровень доступа.</p>`); }
 
-    // ========== РАБОТА СО СТАТЬЯМИ (добавлена поддержка файлов) ==========
-    async function fetchArticlesForRole() {
+    // ========== РАБОТА СО СТАТЬЯМИ (с кешированием) ==========
+    async function fetchArticlesForRole(force = false) {
       if (isSupabaseDown) { showSupabaseDownModal(); return []; }
+      if (!force && cachedArticles && cachedArticles[currentUser.role]) {
+        console.log("Используем кеш статей для роли:", currentUser.role);
+        return cachedArticles[currentUser.role];
+      }
+      console.log("Загружаем статьи из Supabase для роли:", currentUser.role);
       let query = supabase.from('articles').select('*');
       if (currentUser.role === 'player') {
         query = query.or('visible_to_viewer.eq.false,visible_to_viewer.is.null');
@@ -260,36 +274,57 @@
       }
       const { data, error } = await query.order('id', { ascending: false });
       if (error) { handleSupabaseError(error); return []; }
+      if (!cachedArticles) cachedArticles = {};
+      cachedArticles[currentUser.role] = data;
       return data;
     }
-    async function fetchAllArticlesForAdmin() {
+
+    async function fetchAllArticlesForAdmin(force = false) {
       if (isSupabaseDown) { showSupabaseDownModal(); return []; }
+      if (!force && cachedArticles && cachedArticles['adminAll']) {
+        console.log("Используем кеш всех статей для админа");
+        return cachedArticles['adminAll'];
+      }
+      console.log("Загружаем все статьи из Supabase (админ)");
       const { data, error } = await supabase.from('articles').select('*').order('id', { ascending: false });
       if (error) { handleSupabaseError(error); return []; }
+      if (!cachedArticles) cachedArticles = {};
+      cachedArticles['adminAll'] = data;
       return data;
     }
+
     async function addArticle(article) {
       if (isSupabaseDown) { showSupabaseDownModal(); return false; }
       const toInsert = { ...article, visible_to_viewer: !!article.visible_to_viewer };
       const { error } = await supabase.from('articles').insert(toInsert);
       if (error) { handleSupabaseError(error); showModal(`<h2>Ошибка сохранения</h2><p>${escapeHtml(error.message)}</p>`); return false; }
+      invalidateCache();
       return true;
     }
+
     async function updateArticle(id, updates) {
       if (isSupabaseDown) { showSupabaseDownModal(); return; }
       const toUpdate = { ...updates, visible_to_viewer: !!updates.visible_to_viewer };
       const { error } = await supabase.from('articles').update(toUpdate).eq('id', id);
       if (error) handleSupabaseError(error);
+      invalidateCache();
     }
+
     async function deleteArticle(id) {
       if (isSupabaseDown) { showSupabaseDownModal(); return; }
       const { error } = await supabase.from('articles').delete().eq('id', id);
       if (error) handleSupabaseError(error);
+      invalidateCache();
     }
 
-    // ========== РАБОТА С ПАСХАЛКАМИ (без файлов) ==========
-    async function fetchEasterEggs() {
+    // ========== РАБОТА С ПАСХАЛКАМИ (с кешированием) ==========
+    async function fetchEasterEggs(force = false) {
       if (isSupabaseDown) { showSupabaseDownModal(); return []; }
+      if (!force && cachedEasterEggs) {
+        console.log("Используем кеш пасхалок");
+        return cachedEasterEggs;
+      }
+      console.log("Загружаем пасхалки из Supabase");
       const { data, error } = await supabase.from('easter_eggs').select('*').order('id', { ascending: true });
       if (error) {
         console.error(error);
@@ -309,8 +344,10 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
         }
         return [];
       }
+      cachedEasterEggs = data;
       return data;
     }
+
     async function addEasterEgg(egg) {
       if (isSupabaseDown) { showSupabaseDownModal(); return false; }
       const { data, error } = await supabase.from('easter_eggs').insert(egg).select();
@@ -323,16 +360,21 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
         }
         return false;
       }
+      cachedEasterEggs = null;
       return true;
     }
+
     async function updateEasterEgg(id, updates) {
       if (isSupabaseDown) { showSupabaseDownModal(); return; }
       const { error } = await supabase.from('easter_eggs').update(updates).eq('id', id);
       if (error) console.error(error);
+      cachedEasterEggs = null;
     }
+
     async function deleteEasterEgg(id) {
       if (isSupabaseDown) { showSupabaseDownModal(); return; }
       await supabase.from('easter_eggs').delete().eq('id', id);
+      cachedEasterEggs = null;
     }
 
     // ========== РАБОТА С СООБЩЕНИЯМИ ЧАТА ==========
@@ -361,7 +403,7 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
       ];
     }
 
-    // ========== ПАСХАЛКИ (без файлов) ==========
+    // ========== ПАСХАЛКИ ==========
     let easterEggs = [];
     let idleTimer = null;
     let keyCombinationBuffer = '';
@@ -553,7 +595,6 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
           const { data } = await supabase.from('articles').select('*').eq('code', 'QQ-34');
           const article = data?.[0];
           if (!article) { showModal("ОШИБКА: статья не найдена в базе данных"); return; }
-          // У статьи QQ-34 нет файла, поэтому показываем как обычно
           await showArticleModal(article);
         };
       } else {
@@ -565,7 +606,6 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
           const code = document.getElementById('search-code').value.trim().toUpperCase();
           const article = articles.find(a => a.code.toUpperCase() === code);
           if (article) {
-            // Если у статьи есть файл, скачиваем его и не показываем статью
             if (article.file_url) {
               const link = document.createElement('a');
               link.href = article.file_url;
@@ -575,7 +615,6 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
               document.body.removeChild(link);
               return;
             }
-            // Иначе показываем статью
             await showArticleModal(article);
           } else {
             showModal("КОД НЕ НАЙДЕН В АРХИВЕ");
@@ -690,7 +729,7 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
       input.value = '';
     }
 
-    // ========== АДМИН-ПАНЕЛЬ (СТАТЬИ) с поддержкой файлов ==========
+    // ========== АДМИН-ПАНЕЛЬ (СТАТЬИ) ==========
     async function showAdmin() {
       if (isSupabaseDown) { showSupabaseDownModal(); return; }
       const mainContent = document.getElementById('main-content');
@@ -859,7 +898,7 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
       });
     }
 
-    // ========== АДМИН-ПАНЕЛЬ (ПАСХАЛКИ) без файлов ==========
+    // ========== АДМИН-ПАНЕЛЬ (ПАСХАЛКИ) ==========
     async function showEasterAdmin() {
       if (isSupabaseDown) { showSupabaseDownModal(); return; }
       const mainContent = document.getElementById('main-content');
@@ -978,6 +1017,7 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
       });
     }
 
+    // ========== ВХОД ==========
     document.getElementById('login-btn').onclick = async () => {
       const login = document.getElementById('login-input').value.trim();
       const password = document.getElementById('pass-input').value;
@@ -990,6 +1030,7 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
           if (!isConnected) {
             return;
           }
+          // Загружаем пасхалки и кешируем их
           await loadEasterEggs();
           let loadingOverlay = null;
           if (currentUser.role !== 'admin') loadingOverlay = showLoading(null, true);
@@ -1026,7 +1067,7 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
     let idx = 0;
     setInterval(() => { const footer = document.getElementById('security-footer'); if (footer) footer.textContent = tickerMessages[idx % tickerMessages.length] + " • " + new Date().toLocaleTimeString(); idx++; }, 10000);
 
-    // ========== ОБНОВЛЁННЫЕ СОВЕТЫ KEGF ==========
+    // ========== КЕГФ ==========
     const KEGF_TIPS = [
       { text: "Не забывайте сохранять статьи.", weight: 3 },
       { text: "Правильность написания статьи прямо коррелирует с зарплатой агента.", weight: 1 },
@@ -1057,7 +1098,6 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
       { text: "НА ВАШЕМ УСТРОЙСТВЕ ОБНАРУЖЕНО ВРЕДОНОСНОЕ ПО! ДЛЯ ПРОДОЛЖЕНИЯ РАБОТЫ СДЕЛАЙТЕ ЗАДНЕЕ САЛЬТО", weight: 0.5 },
       { text: "Подождите 10 минут на главном экране, ничего не делая.", weight: 0.8 },
       { text: "Переключите раскладку на англ, и на главном экране напишите code.", weight: 0.7 },
-      // ASCII_ART должен остаться
       { text: "ASCII_ART", weight: 0.5 }
     ];
 
