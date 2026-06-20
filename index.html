@@ -74,7 +74,7 @@
 <body>
 
 <div class="header">
-  <div><span class="accent">[BIAR]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v8.4</div>
+  <div><span class="accent">[BIAR]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v9.0</div>
   <div><span id="current-time"></span></div>
 </div>
 
@@ -106,7 +106,7 @@
 
 <script>
   (function() {
-    // ========== ОБФУСЦИРОВАННЫЕ ДАННЫЕ ПОЛЬЗОВАТЕЛЕЙ (исправлено) ==========
+    // ========== ОБФУСЦИРОВАННЫЕ ДАННЫЕ ПОЛЬЗОВАТЕЛЕЙ ==========
     const _b = ["AT2","167","Adm","in","W"];
     const _c = [
       "be1f4506b29b2465352f725c9302b029ff9b76e95f555c8ff3c6c3b69ea78355",
@@ -190,6 +190,20 @@
     }
 
     const STORAGE_BUCKET = "article-images";
+    async function uploadFile(file) {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `${fileName}`;
+      const { data, error } = await supabase.storage.from(STORAGE_BUCKET).upload(filePath, file, { cacheControl: '3600', upsert: false });
+      if (error) {
+        console.error(error);
+        alert(`Ошибка загрузки файла ${file.name}: ${error.message}`);
+        return null;
+      }
+      const { data: publicUrlData } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(filePath);
+      return publicUrlData.publicUrl;
+    }
+
     async function uploadImages(files) {
       const uploadedUrls = [];
       for (const file of files) {
@@ -235,6 +249,7 @@
     function hideLoading(overlay) { if (overlay && overlay.remove) overlay.remove(); }
     function deniedAccess() { showModal(`<h2>ДОСТУП ОТКЛОНЁН</h2><p>Недостаточный уровень доступа.</p>`); }
 
+    // ========== РАБОТА СО СТАТЬЯМИ (добавлена поддержка файлов) ==========
     async function fetchArticlesForRole() {
       if (isSupabaseDown) { showSupabaseDownModal(); return []; }
       let query = supabase.from('articles').select('*');
@@ -272,6 +287,7 @@
       if (error) handleSupabaseError(error);
     }
 
+    // ========== РАБОТА С ПАСХАЛКАМИ (без файлов) ==========
     async function fetchEasterEggs() {
       if (isSupabaseDown) { showSupabaseDownModal(); return []; }
       const { data, error } = await supabase.from('easter_eggs').select('*').order('id', { ascending: true });
@@ -286,9 +302,6 @@
   article_text TEXT,
   show_image BOOLEAN DEFAULT false,
   image_url TEXT,
-  download_file BOOLEAN DEFAULT false,
-  file_url TEXT,
-  file_name TEXT,
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMP DEFAULT NOW()
 );
@@ -322,6 +335,7 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
       await supabase.from('easter_eggs').delete().eq('id', id);
     }
 
+    // ========== РАБОТА С СООБЩЕНИЯМИ ЧАТА ==========
     async function fetchMessagesForAdminPlayer(contact) {
       if (isSupabaseDown) { showSupabaseDownModal(); return []; }
       const { data, error } = await supabase.from('messages').select('*').eq('contact', contact).order('id', { ascending: true });
@@ -347,6 +361,7 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
       ];
     }
 
+    // ========== ПАСХАЛКИ (без файлов) ==========
     let easterEggs = [];
     let idleTimer = null;
     let keyCombinationBuffer = '';
@@ -384,17 +399,6 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
         return;
       }
       showModal(content);
-      if (egg.download_file && egg.file_url) {
-        setTimeout(() => {
-          const link = document.createElement('a');
-          link.href = egg.file_url;
-          link.download = egg.file_name || 'аномалия.txt';
-          link.target = '_blank';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        }, 500);
-      }
       setTimeout(() => { isEasterTriggered = false; }, 5000);
     }
 
@@ -549,6 +553,7 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
           const { data } = await supabase.from('articles').select('*').eq('code', 'QQ-34');
           const article = data?.[0];
           if (!article) { showModal("ОШИБКА: статья не найдена в базе данных"); return; }
+          // У статьи QQ-34 нет файла, поэтому показываем как обычно
           await showArticleModal(article);
         };
       } else {
@@ -559,8 +564,22 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
           if (isSupabaseDown) { showSupabaseDownModal(); return; }
           const code = document.getElementById('search-code').value.trim().toUpperCase();
           const article = articles.find(a => a.code.toUpperCase() === code);
-          if (article) await showArticleModal(article);
-          else showModal("КОД НЕ НАЙДЕН В АРХИВЕ");
+          if (article) {
+            // Если у статьи есть файл, скачиваем его и не показываем статью
+            if (article.file_url) {
+              const link = document.createElement('a');
+              link.href = article.file_url;
+              link.download = article.file_name || 'файл';
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              return;
+            }
+            // Иначе показываем статью
+            await showArticleModal(article);
+          } else {
+            showModal("КОД НЕ НАЙДЕН В АРХИВЕ");
+          }
         };
       }
     }
@@ -596,6 +615,7 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
       });
     }
 
+    // ========== ЧАТ ==========
     let currentChatContact = "ADMIN";
     async function showChat() {
       if (isSupabaseDown) { showSupabaseDownModal(); return; }
@@ -670,13 +690,14 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
       input.value = '';
     }
 
+    // ========== АДМИН-ПАНЕЛЬ (СТАТЬИ) с поддержкой файлов ==========
     async function showAdmin() {
       if (isSupabaseDown) { showSupabaseDownModal(); return; }
       const mainContent = document.getElementById('main-content');
       const articles = await fetchAllArticlesForAdmin();
       let html = `<button id="back-home-admin" class="back-btn">← НАЗАД НА ГЛАВНУЮ</button><h2>АДМИН-ПАНЕЛЬ — СТАТЬИ</h2><button id="create-article-btn">+ Создать статью</button><br><br>`;
       articles.forEach(a => {
-        html += `<div style="border:1px solid #444; padding:15px; margin:10px 0;"><strong>${escapeHtml(a.code)}</strong> — ${escapeHtml(a.title)}${a.visible_to_viewer ? '<span style="color:#0f0;"> [ДЛЯ VIEWER]</span>' : ''}<button class="edit-article-btn" data-id="${a.id}" style="float:right; margin-left:8px;">Ред</button><button class="del-article-btn" data-id="${a.id}" style="float:right;">Удалить</button></div>`;
+        html += `<div style="border:1px solid #444; padding:15px; margin:10px 0;"><strong>${escapeHtml(a.code)}</strong> — ${escapeHtml(a.title)}${a.visible_to_viewer ? '<span style="color:#0f0;"> [ДЛЯ VIEWER]</span>' : ''}${a.file_url ? ' <span style="color:#ffaa00;">[ФАЙЛ]</span>' : ''}<button class="edit-article-btn" data-id="${a.id}" style="float:right; margin-left:8px;">Ред</button><button class="del-article-btn" data-id="${a.id}" style="float:right;">Удалить</button></div>`;
       });
       mainContent.innerHTML = html;
       document.getElementById('back-home-admin').onclick = () => showHome();
@@ -686,7 +707,16 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
     }
 
     function createArticleForm() {
-      showModal(`<h2>Новая статья</h2><input id="new-code" placeholder="Код"><br><input id="new-title" placeholder="Заголовок"><br><textarea id="new-text" rows="7" placeholder="Текст..."></textarea><br><div><label>Изображения (можно несколько):</label><input type="file" id="new-images" multiple accept="image/jpeg,image/png,image/gif,image/webp" class="file-input"><div id="new-images-preview" class="image-preview"></div></div><label style="display:block; margin:10px 0;"><input type="checkbox" id="new-viewer-flag"> Доступно для Viewer</label><button id="save-new-btn">Сохранить</button>`, async () => {
+      showModal(`
+        <h2>Новая статья</h2>
+        <input id="new-code" placeholder="Код"><br>
+        <input id="new-title" placeholder="Заголовок"><br>
+        <textarea id="new-text" rows="7" placeholder="Текст..."></textarea><br>
+        <div><label>Изображения (можно несколько):</label><input type="file" id="new-images" multiple accept="image/jpeg,image/png,image/gif,image/webp" class="file-input"><div id="new-images-preview" class="image-preview"></div></div>
+        <div><label>Прикрепить файл для скачивания (один):</label><input type="file" id="new-file" class="file-input"><span id="new-file-name" style="font-size:12px; color:#777;"></span></div>
+        <label style="display:block; margin:10px 0;"><input type="checkbox" id="new-viewer-flag"> Доступно для Viewer</label>
+        <button id="save-new-btn">Сохранить</button>
+      `, async () => {
         const fileInput = document.getElementById('new-images');
         const previewDiv = document.getElementById('new-images-preview');
         fileInput.addEventListener('change', () => {
@@ -701,26 +731,46 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
             reader.readAsDataURL(file);
           }
         });
-        const saveBtn = document.getElementById('save-new-btn');
-        if (saveBtn) saveBtn.onclick = async () => {
-          if (isSupabaseDown) { showSupabaseDownModal(); return; }
-          const code = document.getElementById('new-code').value.trim();
-          const title = document.getElementById('new-title').value.trim();
-          const text = document.getElementById('new-text').value.trim();
-          if (!code || !title || !text) { alert("Заполните код, заголовок и текст"); return; }
-          const visibleToViewer = document.getElementById('new-viewer-flag').checked;
-          let imageUrls = [];
-          const files = fileInput.files;
-          if (files && files.length > 0) {
-            const uploadOverlay = showLoading(null, true);
-            imageUrls = await uploadImages(Array.from(files));
-            hideLoading(uploadOverlay);
-            if (!imageUrls) return;
+        const fileUpload = document.getElementById('new-file');
+        const fileNameSpan = document.getElementById('new-file-name');
+        fileUpload.addEventListener('change', () => {
+          if (fileUpload.files.length > 0) {
+            fileNameSpan.textContent = 'Выбран: ' + fileUpload.files[0].name;
+          } else {
+            fileNameSpan.textContent = '';
           }
-          const newArticle = { id: Date.now(), code, title, text, images: imageUrls, date: new Date().toISOString().split('T')[0], visible_to_viewer: visibleToViewer };
-          const success = await addArticle(newArticle);
-          if (success) { closeModal(); showAdmin(); }
-        };
+        });
+        const saveBtn = document.getElementById('save-new-btn');
+        if (saveBtn) {
+          saveBtn.onclick = async () => {
+            if (isSupabaseDown) { showSupabaseDownModal(); return; }
+            const code = document.getElementById('new-code').value.trim();
+            const title = document.getElementById('new-title').value.trim();
+            const text = document.getElementById('new-text').value.trim();
+            if (!code || !title || !text) { alert("Заполните код, заголовок и текст"); return; }
+            const visibleToViewer = document.getElementById('new-viewer-flag').checked;
+            let imageUrls = [];
+            const files = fileInput.files;
+            if (files && files.length > 0) {
+              const uploadOverlay = showLoading(null, true);
+              imageUrls = await uploadImages(Array.from(files));
+              hideLoading(uploadOverlay);
+              if (!imageUrls) return;
+            }
+            let fileUrl = null, fileName = null;
+            const fileToUpload = fileUpload.files[0];
+            if (fileToUpload) {
+              const uploadOverlay = showLoading(null, true);
+              fileUrl = await uploadFile(fileToUpload);
+              hideLoading(uploadOverlay);
+              if (!fileUrl) return;
+              fileName = fileToUpload.name;
+            }
+            const newArticle = { id: Date.now(), code, title, text, images: imageUrls, date: new Date().toISOString().split('T')[0], visible_to_viewer: visibleToViewer, file_url: fileUrl, file_name: fileName };
+            const success = await addArticle(newArticle);
+            if (success) { closeModal(); showAdmin(); }
+          };
+        }
       });
     }
 
@@ -730,7 +780,25 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
       const a = articles.find(x => x.id === id);
       if (!a) return;
       const existingImages = a.images || [];
-      showModal(`<h2>Редактирование</h2><input id="edit-code" value="${escapeHtml(a.code)}"><br><input id="edit-title" value="${escapeHtml(a.title)}"><br><textarea id="edit-text" rows="8">${escapeHtml(a.text)}</textarea><br><div><label>Добавить новые изображения:</label><input type="file" id="edit-images" multiple accept="image/jpeg,image/png,image/gif,image/webp" class="file-input"><div id="edit-images-preview" class="image-preview"></div></div><div><label>Текущие изображения:</label><div id="current-images-list" class="image-preview">${existingImages.map((url, idx) => `<div class="image-preview-item"><img src="${escapeHtml(url)}"><span class="remove-existing" data-url="${escapeHtml(url)}">✕</span></div>`).join('')}</div></div><label style="display:block; margin:10px 0;"><input type="checkbox" id="edit-viewer-flag" ${a.visible_to_viewer ? 'checked' : ''}> Доступно для Viewer</label><button id="save-edit-btn">Сохранить изменения</button>`, async () => {
+      const currentFile = a.file_url || '';
+      const currentFileName = a.file_name || '';
+      showModal(`
+        <h2>Редактирование</h2>
+        <input id="edit-code" value="${escapeHtml(a.code)}"><br>
+        <input id="edit-title" value="${escapeHtml(a.title)}"><br>
+        <textarea id="edit-text" rows="8">${escapeHtml(a.text)}</textarea><br>
+        <div><label>Добавить новые изображения:</label><input type="file" id="edit-images" multiple accept="image/jpeg,image/png,image/gif,image/webp" class="file-input"><div id="edit-images-preview" class="image-preview"></div></div>
+        <div><label>Текущие изображения:</label><div id="current-images-list" class="image-preview">${existingImages.map((url, idx) => `<div class="image-preview-item"><img src="${escapeHtml(url)}"><span class="remove-existing" data-url="${escapeHtml(url)}">✕</span></div>`).join('')}</div></div>
+        <div><label>Файл для скачивания:</label>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <input type="file" id="edit-file" class="file-input" style="flex:1;">
+            <span id="edit-file-current" style="font-size:12px; color:#777;">${currentFile ? 'Текущий: ' + escapeHtml(currentFileName) : 'Файл не прикреплён'}</span>
+            <button id="remove-file-btn" style="background:transparent; border:1px solid #ff4444; color:#ff4444; padding:4px 8px; cursor:pointer;">✕</button>
+          </div>
+        </div>
+        <label style="display:block; margin:10px 0;"><input type="checkbox" id="edit-viewer-flag" ${a.visible_to_viewer ? 'checked' : ''}> Доступно для Viewer</label>
+        <button id="save-edit-btn">Сохранить изменения</button>
+      `, async () => {
         const fileInput = document.getElementById('edit-images');
         const previewDiv = document.getElementById('edit-images-preview');
         fileInput.addEventListener('change', () => {
@@ -746,26 +814,52 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
           }
         });
         document.querySelectorAll('.remove-existing').forEach(btn => { btn.onclick = () => btn.parentElement.remove(); });
-        const saveBtn = document.getElementById('save-edit-btn');
-        if (saveBtn) saveBtn.onclick = async () => {
-          if (isSupabaseDown) { showSupabaseDownModal(); return; }
-          const visibleToViewer = document.getElementById('edit-viewer-flag').checked;
-          const remainingUrls = []; document.querySelectorAll('#current-images-list .image-preview-item img').forEach(img => remainingUrls.push(img.src));
-          const files = fileInput.files;
-          let newUrls = [];
-          if (files && files.length > 0) {
-            const uploadOverlay = showLoading(null, true);
-            newUrls = await uploadImages(Array.from(files));
-            hideLoading(uploadOverlay);
-            if (!newUrls) return;
-          }
-          const allUrls = [...remainingUrls, ...newUrls];
-          await updateArticle(id, { code: document.getElementById('edit-code').value.trim(), title: document.getElementById('edit-title').value.trim(), text: document.getElementById('edit-text').value.trim(), images: allUrls, visible_to_viewer: visibleToViewer });
-          closeModal(); showAdmin();
+        const fileUpload = document.getElementById('edit-file');
+        const removeFileBtn = document.getElementById('remove-file-btn');
+        let removeFile = false;
+        removeFileBtn.onclick = () => {
+          removeFile = true;
+          document.getElementById('edit-file-current').textContent = 'Файл будет удалён';
+          removeFileBtn.style.display = 'none';
         };
+        const saveBtn = document.getElementById('save-edit-btn');
+        if (saveBtn) {
+          saveBtn.onclick = async () => {
+            if (isSupabaseDown) { showSupabaseDownModal(); return; }
+            const visibleToViewer = document.getElementById('edit-viewer-flag').checked;
+            const remainingUrls = []; document.querySelectorAll('#current-images-list .image-preview-item img').forEach(img => remainingUrls.push(img.src));
+            const files = fileInput.files;
+            let newUrls = [];
+            if (files && files.length > 0) {
+              const uploadOverlay = showLoading(null, true);
+              newUrls = await uploadImages(Array.from(files));
+              hideLoading(uploadOverlay);
+              if (!newUrls) return;
+            }
+            const allUrls = [...remainingUrls, ...newUrls];
+            let fileUrl = a.file_url;
+            let fileName = a.file_name;
+            if (removeFile) {
+              fileUrl = null;
+              fileName = null;
+            } else {
+              const fileToUpload = fileUpload.files[0];
+              if (fileToUpload) {
+                const uploadOverlay = showLoading(null, true);
+                fileUrl = await uploadFile(fileToUpload);
+                hideLoading(uploadOverlay);
+                if (!fileUrl) return;
+                fileName = fileToUpload.name;
+              }
+            }
+            await updateArticle(id, { code: document.getElementById('edit-code').value.trim(), title: document.getElementById('edit-title').value.trim(), text: document.getElementById('edit-text').value.trim(), images: allUrls, visible_to_viewer: visibleToViewer, file_url: fileUrl, file_name: fileName });
+            closeModal(); showAdmin();
+          };
+        }
       });
     }
 
+    // ========== АДМИН-ПАНЕЛЬ (ПАСХАЛКИ) без файлов ==========
     async function showEasterAdmin() {
       if (isSupabaseDown) { showSupabaseDownModal(); return; }
       const mainContent = document.getElementById('main-content');
@@ -777,7 +871,6 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
         const actions = [];
         if (e.show_article) actions.push('статья');
         if (e.show_image) actions.push('изображение');
-        if (e.download_file) actions.push('файл');
         html += `<div style="border:1px solid #444; padding:15px; margin:10px 0;">
           <strong>#${e.id}</strong> — ${type} — ${status} — Действия: ${actions.join(', ')}
           <button class="edit-easter-btn" data-id="${e.id}" style="float:right; margin-left:8px;">Ред</button>
@@ -805,9 +898,6 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
         <textarea id="easter-article-text" placeholder="Текст статьи (если включено)" rows="4"></textarea><br>
         <label><input type="checkbox" id="easter-show-image"> Показать изображение</label><br>
         <input id="easter-image-url" placeholder="Прямая ссылка на изображение (напр. https://i.ibb.co/.../file.jpg)"><br>
-        <label><input type="checkbox" id="easter-download-file"> Скачать файл</label><br>
-        <input id="easter-file-url" placeholder="Прямая ссылка на файл (напр. https://files.catbox.moe/.../file.txt)"><br>
-        <input id="easter-file-name" placeholder="Имя файла при скачивании (например, секрет.txt)"><br>
         <label><input type="checkbox" id="easter-is-active" checked> Активна</label><br>
         <button id="save-easter-btn">Сохранить</button>
       `, async () => {
@@ -822,9 +912,6 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
             const articleText = document.getElementById('easter-article-text').value.trim();
             const showImage = document.getElementById('easter-show-image').checked;
             const imageUrl = document.getElementById('easter-image-url').value.trim();
-            const downloadFile = document.getElementById('easter-download-file').checked;
-            const fileUrl = document.getElementById('easter-file-url').value.trim();
-            const fileName = document.getElementById('easter-file-name').value.trim() || 'аномалия.txt';
             const isActive = document.getElementById('easter-is-active').checked;
             const newEgg = {
               id: Date.now(),
@@ -834,9 +921,6 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
               article_text: showArticle ? articleText : null,
               show_image: showImage,
               image_url: showImage ? imageUrl : null,
-              download_file: downloadFile,
-              file_url: downloadFile ? fileUrl : null,
-              file_name: downloadFile ? fileName : null,
               is_active: isActive
             };
             const success = await addEasterEgg(newEgg);
@@ -864,9 +948,6 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
         <textarea id="easter-article-text" rows="4">${escapeHtml(egg.article_text || '')}</textarea><br>
         <label><input type="checkbox" id="easter-show-image" ${egg.show_image ? 'checked' : ''}> Показать изображение</label><br>
         <input id="easter-image-url" value="${escapeHtml(egg.image_url || '')}" placeholder="Прямая ссылка на изображение"><br>
-        <label><input type="checkbox" id="easter-download-file" ${egg.download_file ? 'checked' : ''}> Скачать файл</label><br>
-        <input id="easter-file-url" value="${escapeHtml(egg.file_url || '')}" placeholder="Прямая ссылка на файл"><br>
-        <input id="easter-file-name" value="${escapeHtml(egg.file_name || '')}" placeholder="Имя файла"><br>
         <label><input type="checkbox" id="easter-is-active" ${egg.is_active ? 'checked' : ''}> Активна</label><br>
         <button id="save-edit-easter-btn">Сохранить</button>
       `, async () => {
@@ -881,9 +962,6 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
             const articleText = document.getElementById('easter-article-text').value.trim();
             const showImage = document.getElementById('easter-show-image').checked;
             const imageUrl = document.getElementById('easter-image-url').value.trim();
-            const downloadFile = document.getElementById('easter-download-file').checked;
-            const fileUrl = document.getElementById('easter-file-url').value.trim();
-            const fileName = document.getElementById('easter-file-name').value.trim() || 'аномалия.txt';
             const isActive = document.getElementById('easter-is-active').checked;
             await updateEasterEgg(id, {
               trigger_type: triggerType,
@@ -892,9 +970,6 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
               article_text: showArticle ? articleText : null,
               show_image: showImage,
               image_url: showImage ? imageUrl : null,
-              download_file: downloadFile,
-              file_url: downloadFile ? fileUrl : null,
-              file_name: downloadFile ? fileName : null,
               is_active: isActive
             });
             closeModal(); showEasterAdmin();
@@ -951,6 +1026,7 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
     let idx = 0;
     setInterval(() => { const footer = document.getElementById('security-footer'); if (footer) footer.textContent = tickerMessages[idx % tickerMessages.length] + " • " + new Date().toLocaleTimeString(); idx++; }, 10000);
 
+    // ========== ОБНОВЛЁННЫЕ СОВЕТЫ KEGF ==========
     const KEGF_TIPS = [
       { text: "Не забывайте сохранять статьи.", weight: 3 },
       { text: "Правильность написания статьи прямо коррелирует с зарплатой агента.", weight: 1 },
@@ -979,8 +1055,9 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
       { text: "Не пропускай это сообщение.", weight: 0.6 },
       { text: "Пожалуйста протрите основную камеру", weight: 0.5 },
       { text: "НА ВАШЕМ УСТРОЙСТВЕ ОБНАРУЖЕНО ВРЕДОНОСНОЕ ПО! ДЛЯ ПРОДОЛЖЕНИЯ РАБОТЫ СДЕЛАЙТЕ ЗАДНЕЕ САЛЬТО", weight: 0.5 },
-      { text: "Подождите 10 минут не главном экране, ничего не делая.", weight: 0.8 },
+      { text: "Подождите 10 минут на главном экране, ничего не делая.", weight: 0.8 },
       { text: "Переключите раскладку на англ, и на главном экране напишите code.", weight: 0.7 },
+      // ASCII_ART должен остаться
       { text: "ASCII_ART", weight: 0.5 }
     ];
 
