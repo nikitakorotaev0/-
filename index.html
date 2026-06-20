@@ -74,7 +74,7 @@
 <body>
 
 <div class="header">
-  <div><span class="accent">[BIAR]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v8.3.1</div>
+  <div><span class="accent">[BIAR]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v8.4</div>
   <div><span id="current-time"></span></div>
 </div>
 
@@ -106,8 +106,7 @@
 
 <script>
   (function() {
-    // ========== ОБФУСЦИРОВАННЫЕ ДАННЫЕ ПОЛЬЗОВАТЕЛЕЙ ==========
-    const _a = "x1y2z3";
+    // ========== ОБФУСЦИРОВАННЫЕ ДАННЫЕ ПОЛЬЗОВАТЕЛЕЙ (исправлено) ==========
     const _b = ["AT2","167","Adm","in","W"];
     const _c = [
       "be1f4506b29b2465352f725c9302b029ff9b76e95f555c8ff3c6c3b69ea78355",
@@ -127,9 +126,7 @@
     function _getName(index) { return _e[index]; }
 
     const users = {};
-    const loginIndices = [];
-    for (let i = 0; i < _b.length; i++) loginIndices.push(i % 3);
-    const uniqueIndices = [...new Set(loginIndices)];
+    const uniqueIndices = [0, 1, 2];
     for (let idx of uniqueIndices) {
       const login = _buildLogin(idx);
       const hash = _getHash(idx);
@@ -942,10 +939,10 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
           }
           return;
         } else {
-          alert(`Неверный пароль.\nВведено: "${password}"\nПопробуйте пароль: AAF2615w (все заглавные, без пробелов)`);
+          showModal(`<h2>Ошибка входа</h2><p style="color:var(--accent);">Неправильный логин или пароль.</p>`);
         }
       } else {
-        alert("Неверный код агента.");
+        showModal(`<h2>Ошибка входа</h2><p style="color:var(--accent);">Неправильный логин или пароль.</p>`);
       }
     };
 
@@ -1106,7 +1103,7 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
         }
         return;
       }
-      const greetingText = `👋 Привет!\nМеня зовут Kegf.\nЯ виртуальный помощник новеньким агентам в системе терминалов BIAR. Код в архиве BIAR.`;
+      const greetingText = `👋 Привет!\nМеня зовут Kegf.\nЯ виртуальный помощник новеньким агентам в системе терминалов BIAR.`;
       createKegfBubble(greetingText);
       kegfHasGreeted = true;
     }
