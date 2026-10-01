@@ -69,9 +69,83 @@
     @media (max-width: 600px) { #kegf-image { width: 60px; } .kegf-bubble { max-width: 200px; font-size: 11px; padding: 10px 12px; } .kegf-bubble-ascii { max-width: 280px; font-size: 8px; padding: 12px; } }
     .error-modal h2 { color: #ff4444; }
     .error-modal .contact { color: var(--accent); text-decoration: underline; cursor: pointer; }
+
+    /* ===== ФЕЙКОВАЯ СТРАНИЦА ОШИБКИ ===== */
+    #fake-error-page {
+      position: fixed;
+      inset: 0;
+      background: #0a0a0a;
+      color: #bbbbbb;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100000;
+      padding: 20px;
+    }
+    .fake-error-box {
+      max-width: 560px;
+      width: 100%;
+      border: 1px solid #333;
+      padding: 40px 30px;
+      text-align: center;
+      background: #0d0d0d;
+    }
+    .fake-error-code {
+      font-size: 64px;
+      color: #ff4444;
+      text-shadow: 0 0 12px rgba(255,68,68,0.6);
+      margin-bottom: 10px;
+      letter-spacing: 4px;
+    }
+    .fake-error-box h1 {
+      font-size: 20px;
+      color: #dddddd;
+      margin-bottom: 15px;
+      font-weight: normal;
+    }
+    .fake-error-box p {
+      font-size: 14px;
+      line-height: 1.6;
+      margin: 8px 0;
+    }
+    .fake-error-hint {
+      color: #666;
+      font-size: 12px;
+      margin-top: 20px;
+    }
+    .fake-error-hint span {
+      color: #ff4444;
+    }
+    .fake-error-footer {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 30px;
+      padding-top: 15px;
+      border-top: 1px solid #222;
+      font-size: 11px;
+      color: #555;
+    }
   </style>
 </head>
 <body>
+
+<!-- ФЕЙКОВАЯ СТРАНИЦА ОШИБКИ -->
+<div id="fake-error-page">
+  <div class="fake-error-box">
+    <div class="fake-error-code">503</div>
+    <h1>Сайт временно недоступен</h1>
+    <p>Сервер не может обработать запрос. Пожалуйста, попробуйте позже.</p>
+    <p class="fake-error-hint">Error code: <span>ERR_SERVICE_UNAVAILABLE</span></p>
+    <div class="fake-error-footer">
+      <span>nginx/1.24.0</span>
+      <span id="fake-error-time"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ОБЁРТКА ВСЕГО САЙТА (изначально скрыта) -->
+<div id="real-site" style="display:none;">
 
 <div class="header">
   <div><span class="accent">[BIAR]</span> БЮРО ИССЛЕДОВАНИЙ АНОМАЛИЙ РОССИИ — v9.1</div>
@@ -1263,6 +1337,43 @@ ALTER TABLE easter_eggs DISABLE ROW LEVEL SECURITY;</pre>`);
 
     window.initKegf = initKegf;
   })();
+
+  // ========== ЗАЩИТНАЯ СТРАНИЦА 503 / СЕКРЕТНЫЙ ВХОД ==========
+  (function() {
+    const fakeError = document.getElementById('fake-error-page');
+    const realSite = document.getElementById('real-site');
+    let buffer = '';
+
+    function showRealSite() {
+      fakeError.style.display = 'none';
+      realSite.style.display = 'block';
+      document.removeEventListener('keydown', handleSecret);
+    }
+
+    function handleSecret(e) {
+      if (e.key && e.key.length === 1 && /\d/.test(e.key)) {
+        buffer += e.key;
+        if (buffer.length > 4) buffer = buffer.slice(-4);
+        if (buffer === '8888') {
+          buffer = '';
+          showRealSite();
+        }
+      } else if (e.key && e.key.length === 1) {
+        buffer = '';
+      }
+    }
+
+    function updateFakeTime() {
+      const t = document.getElementById('fake-error-time');
+      if (t) t.textContent = new Date().toLocaleString('ru-RU');
+    }
+    updateFakeTime();
+    setInterval(updateFakeTime, 1000);
+
+    document.addEventListener('keydown', handleSecret);
+  })();
 </script>
+
+</div> <!-- /#real-site -->
 </body>
 </html>
